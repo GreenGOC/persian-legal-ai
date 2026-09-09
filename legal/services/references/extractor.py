@@ -194,7 +194,6 @@ Before returning:
 OUTPUT ONLY VALID JSON.
 """
 
-
 class ReferenceExtractor:
     def __init__(self, client: LLMClient):
         self.client = client

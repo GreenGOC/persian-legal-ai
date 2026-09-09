@@ -20,9 +20,7 @@ class Command(BaseCommand):
     help = "Import legal documents from JSON files"
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "directory", type=str, help="Directory containing JSON files"
-        )
+        parser.add_argument("directory", type=str, help="Directory containing JSON files")
 
     def handle(self, *args, **options):
         directory = Path(options["directory"])
@@ -47,23 +45,17 @@ class Command(BaseCommand):
             self.stdout.write(f"[{index}/{len(files)}] {path.name}")
             try:
                 data = read_file(path)
-                title = normalizer.normalize(
-                    data.get("title", "").translate(DIGIT_TRANSLATION)
-                ).strip()
+                title = normalizer.normalize(data.get("title", "").translate(DIGIT_TRANSLATION)).strip()
 
                 if title in all_titles:
-                    self.stdout.write(
-                        self.style.WARNING(f"  Skipped {title}: It's repeated")
-                    )
+                    self.stdout.write(self.style.WARNING(f"  Skipped {title}: It's repeated"))
                     skipped_count += 1
                     all_titles[title] += 1
                     continue
 
                 document = import_document(data)
                 if document is None:
-                    self.stdout.write(
-                        self.style.WARNING(f"  Skipped {title}: It's not iranian")
-                    )
+                    self.stdout.write(self.style.WARNING(f"  Skipped {title}: It's not iranian"))
                     skipped_count += 1
                     continue
                 all_titles[title] = 1

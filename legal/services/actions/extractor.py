@@ -110,7 +110,6 @@ No punctuation.
 No markdown.
 """
 
-
 class ActionExtractor:
     def __init__(self, client: LLMClient):
         self.client = client

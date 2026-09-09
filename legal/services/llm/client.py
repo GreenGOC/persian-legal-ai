@@ -1,6 +1,5 @@
 from openai import OpenAI
 
-
 class LLMClient:
     def __init__(self, base_url, api_key, model, timeout=60):
         self.model = model
@@ -19,6 +18,5 @@ class LLMClient:
                     "content": user_prompt,
                 },
             ],
-            temperature=temperature,
-        )
+            temperature=temperature)
         return response.choices[0].message.content

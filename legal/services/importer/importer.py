@@ -340,13 +340,7 @@ def determine_parent(stack: List[Dict[str, Any]], element_type: str, subtype: st
     return stack[-1]["element"] if stack else None
 
 
-def create_structural_element(
-    document: LegalDocument,
-    parent: Optional[LegalElement],
-    order: int,
-    subtype: str,
-    node: Dict[str, Any],
-) -> LegalElement:
+def create_structural_element(document: LegalDocument, parent: Optional[LegalElement], order: int, subtype: str, node: Dict[str, Any]) -> LegalElement:
     element = LegalElement.objects.create(
         document=document,
         parent=parent,
@@ -366,13 +360,7 @@ def create_structural_element(
     return element, order + 1
 
 
-def create_provision_element(
-    document: LegalDocument,
-    parent: Optional[LegalElement],
-    order: int,
-    subtype: str,
-    node: Dict[str, Any],
-) -> LegalElement:
+def create_provision_element(document: LegalDocument, parent: Optional[LegalElement], order: int, subtype: str, node: Dict[str, Any]) -> LegalElement:
     header = normalize_text(node.get("header", ""))
     text = normalize_text(node.get("text", ""))
     if not text:
@@ -402,50 +390,19 @@ def create_provision_element(
     extra_text = "\n".join(lines[1:])
     number = extract_provision_number(header, subtype)
     title = extract_provision_title(header, subtype)
-    element = LegalElement.objects.create(
-        document=document,
-        parent=parent,
-        element_type=ElementType.PROVISION,
-        order=order,
-    )
-    provision = LegalProvision.objects.create(
-        element=element,
-        provision_type=subtype,
-        number=number,
-        title=title,
-        text=main_text,
-    )
+    element = LegalElement.objects.create(document=document, parent=parent, element_type=ElementType.PROVISION, order=order)
+    provision = LegalProvision.objects.create(element=element, provision_type=subtype, number=number, title=title, text=main_text)
     LegalVersion.objects.create(provision=provision, version_date=version_date, text=main_text)
     new_order = order + 1
     if extra_text:
-        other_element = LegalElement.objects.create(
-            document=document,
-            parent=parent,
-            element_type=ElementType.PROVISION,
-            order=new_order,
-        )
-        other_provision = LegalProvision.objects.create(
-            element=other_element,
-            provision_type=ProvisionType.OTHER,
-            number="",
-            title="متفرقه",
-            text=extra_text,
-        )
-        LegalVersion.objects.create(
-            provision=other_provision,
-            version_date=document.approval_date,
-            text=extra_text,
-        )
+        other_element = LegalElement.objects.create(document=document, parent=parent, element_type=ElementType.PROVISION, order=new_order)
+        other_provision = LegalProvision.objects.create(element=other_element, provision_type=ProvisionType.OTHER, number="", title="متفرقه", text=extra_text)
+        LegalVersion.objects.create(provision=other_provision, version_date=document.approval_date, text=extra_text)
         new_order += 1
     return element, new_order
 
 
-def process_node(
-    document: LegalDocument,
-    node: Dict[str, Any],
-    stack: List[Dict[str, Any]],
-    order: int,
-) -> LegalElement:
+def process_node( document: LegalDocument, node: Dict[str, Any], stack: List[Dict[str, Any]], order: int) -> LegalElement:
     element_type, subtype = determine_element_type(node)
     if subtype is None:
         subtype = StructuralType.OTHER if element_type == ElementType.STRUCTURAL else ProvisionType.OTHER
@@ -455,13 +412,11 @@ def process_node(
     else:
         element, new_order = create_provision_element(document=document, parent=parent, order=order, subtype=subtype, node=node)
     if element is not None:
-        stack.append(
-            {
+        stack.append({
                 "element": element,
                 "element_type": element_type,
                 "subtype": subtype,
-            }
-        )
+            })
 
     return element, new_order
 

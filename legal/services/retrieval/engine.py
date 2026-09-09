@@ -4,7 +4,6 @@ from .hybrid import HybridRetriever
 from .query import QueryProcessor
 from .reranker import Reranker
 
-
 class RetrievalEngine:
     def __init__(self, device="cpu"):
         print("RetrievalEngine: initializing retrievers...")
@@ -36,6 +35,7 @@ class RetrievalEngine:
         if not self.initialized:
             print("RetrievalEngine: not initialized, raising error.")
             raise RuntimeError("RetrievalEngine is not connected!")
+        
         processed_query = self.query_processor.process(query)
         print("RetrievalEngine: processed query:", processed_query.normalized)
         candidates = self.hybrid_retriever.search(processed_query.normalized, top_k=top_k, retrieval_k=retrieval_k)

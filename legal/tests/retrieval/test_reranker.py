@@ -2,7 +2,6 @@ from django.test import TestCase
 
 from legal.services.retrieval.reranker import Reranker
 
-
 class RerankerTest(TestCase):
 
     @classmethod
@@ -107,20 +106,9 @@ class RerankerTest(TestCase):
         for test_index, test_case in enumerate(test_cases, start=1):
             query = test_case["query"]
             documents = test_case["documents"]
-
             pairs = [(query, document) for document in documents]
-
-            scores = self.reranker.model.predict(
-                pairs,
-                show_progress_bar=False,
-                convert_to_numpy=True,
-            )
-
-            results = sorted(
-                zip(documents, scores),
-                key=lambda item: float(item[1]),
-                reverse=True,
-            )
+            scores = self.reranker.model.predict(pairs, show_progress_bar=False, convert_to_numpy=True)
+            results = sorted(zip(documents, scores), key=lambda item: float(item[1]), reverse=True)
 
             print(f"\n{'=' * 80}")
             print(f"TEST {test_index}")
@@ -131,7 +119,4 @@ class RerankerTest(TestCase):
                 print(f"\n{rank}. SCORE: {float(score):.4f}")
                 print(f"   {document}")
 
-            self.assertEqual(
-                len(scores),
-                len(documents),
-            )
+            self.assertEqual(len(scores), len(documents))

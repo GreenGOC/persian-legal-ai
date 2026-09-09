@@ -21,6 +21,4 @@ class Command(BaseCommand):
         self.stdout.write("Building dense index...")
         dense_indexer.connect()
         total_indexed = dense_indexer.index_all()
-        self.stdout.write(
-            self.style.SUCCESS(f"Finished. Indexed {total_indexed} provisions.")
-        )
+        self.stdout.write(self.style.SUCCESS(f"Finished. Indexed {total_indexed} provisions."))

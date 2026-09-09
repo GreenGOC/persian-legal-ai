@@ -118,17 +118,13 @@ class Command(BaseCommand):
                         json.dump(result, file, ensure_ascii=False, indent=2)
 
                     processed += 1
-                    self.stdout.write(
-                        self.style.SUCCESS(f"[REFERENCE OK] {provision.id}")
-                    )
+                    self.stdout.write(self.style.SUCCESS(f"[REFERENCE OK] {provision.id}"))
 
                     action_queue.put(output_file)
 
                 except Exception as e:
                     failed += 1
-                    self.stdout.write(
-                        self.style.ERROR(f"[REFERENCE ERROR] {provision.id}: {e}")
-                    )
+                    self.stdout.write(self.style.ERROR(f"[REFERENCE ERROR] {provision.id}: {e}"))
                     reference_failures.append(provision.id)
 
         finally:
@@ -161,9 +157,7 @@ class Command(BaseCommand):
             if not source_line or not reference_raw_text:
                 actions.append({})
                 continue
-            action = action_extractor.extract_action(
-                source_line=source_line, reference_raw_text=reference_raw_text
-            )
+            action = action_extractor.extract_action(source_line=source_line, reference_raw_text=reference_raw_text)
             if action is None:
                 actions.append({})
             else:

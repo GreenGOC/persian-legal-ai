@@ -62,10 +62,8 @@ OUTPUT:
     def build_user_prompt(self, question, context):
         if not question or not question.strip():
             raise ValueError("question cannot be empty")
-
         if not context or not context.strip():
             raise ValueError("context cannot be empty")
-
         return f"LEGAL CONTEXT:\n{context.strip()}\n\nUSER QUESTION:\n{question.strip()}\n\nRETURN JSON:"
 
     def build(self, question, context):

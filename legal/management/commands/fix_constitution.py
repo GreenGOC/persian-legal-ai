@@ -112,9 +112,7 @@ HISTORICAL_VERSION_RE = re.compile(
 
 
 def normalize_digits(value: str) -> str:
-    return str(value).translate(
-        str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
-    )
+    return str(value).translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
 
 
 def normalize_ordinal_word(word: str) -> str:
@@ -171,26 +169,18 @@ def persian_number_to_int(value: str):
 
 def extract_first_line(paragraph):
     text = paragraph.get_text("\n", strip=True)
-    lines = [
-        normalize_text(line).strip()
-        for line in text.splitlines()
-        if normalize_text(line).strip()
-    ]
+    lines = [normalize_text(line).strip() for line in text.splitlines() if normalize_text(line).strip()]
     return lines[0] if lines else ""
 
 
 def parse_principle_heading(heading: str):
     heading = normalize_text(heading).strip()
     match = CURRENT_PRINCIPLE_HEADING_RE.match(heading)
-
     if not match:
         return None
-
     number = persian_number_to_int(match.group(1))
-
     if number is None:
         return None
-
     return {
         "number": number,
         "label": match.group(2),
@@ -201,25 +191,19 @@ def parse_principle_heading(heading: str):
 def clean_current_principle_text(paragraph, heading: str):
     text = normalize_text(paragraph.get_text(" ", strip=True)).strip()
     heading = normalize_text(heading).strip()
-
     if text.startswith(heading):
         text = text[len(heading) :].strip()
-
     return normalize_text(text)
 
 
 def parse_historical_version(text: str):
     text = normalize_text(text).strip()
     match = HISTORICAL_VERSION_RE.match(text)
-
     if not match:
         return None
-
     number = normalize_digits(match.group(1))
-
     if not number.isdigit():
         return None
-
     return {
         "number": int(number),
         "label": match.group(2),
@@ -234,22 +218,16 @@ def parse_constitution_html(html_path: str):
     soup = BeautifulSoup(html, "html.parser")
     paragraphs = soup.find_all("p")
     principles = {}
-
     for index, paragraph in enumerate(paragraphs):
         raw_text = normalize_text(paragraph.get_text(" ", strip=True)).strip()
-
         if not raw_text:
             continue
-
         if re.match(r"^\s*\[\s*اصل\b", raw_text):
             historical = parse_historical_version(raw_text)
-
             if historical is None:
                 print(f"[WARNING] Could not parse historical version: {raw_text[:200]}")
                 continue
-
             number = historical["number"]
-
             if number not in principles:
                 principles[number] = {
                     "provision_type": ProvisionType.CONSTITUTIONAL_PRINCIPLE,
@@ -258,36 +236,24 @@ def parse_constitution_html(html_path: str):
                     "text": "",
                     "versions": [],
                 }
-
-            duplicate = any(
-                version["version_date"] == historical["version_date"]
-                and version["status"] == historical["status"]
-                for version in principles[number]["versions"]
-            )
-
+            duplicate = any( version["version_date"] == historical["version_date"] and version["status"] == historical["status"] for version in principles[number]["versions"])
             if not duplicate:
-                principles[number]["versions"].append(
-                    {
+                principles[number]["versions"].append({
                         "text": historical["text"],
                         "version_date": historical["version_date"],
                         "status": historical["status"],
-                    }
-                )
-
+                    })
             continue
 
         if not re.match(r"^\s*اصل\b", raw_text):
             continue
-
         heading = extract_first_line(paragraph)
         parsed_heading = parse_principle_heading(heading)
-
         if parsed_heading is None:
             print(f"[WARNING] Could not parse principle heading: {heading[:200]}")
             continue
 
         number = parsed_heading["number"]
-
         if number not in principles:
             principles[number] = {
                 "provision_type": ProvisionType.CONSTITUTIONAL_PRINCIPLE,
@@ -298,42 +264,26 @@ def parse_constitution_html(html_path: str):
             }
 
         current_text = clean_current_principle_text(paragraph, heading)
-
         if not current_text and index + 1 < len(paragraphs):
-            next_text = normalize_text(
-                paragraphs[index + 1].get_text(" ", strip=True)
-            ).strip()
+            next_text = normalize_text(paragraphs[index + 1].get_text(" ", strip=True)).strip()
 
-            if (
-                next_text
-                and not re.match(r"^\s*\[\s*اصل\b", next_text)
-                and not re.match(r"^\s*اصل\b", next_text)
-            ):
+            if next_text and not re.match(r"^\s*\[\s*اصل\b", next_text) and not re.match(r"^\s*اصل\b", next_text):
                 current_text = next_text
 
         principles[number]["text"] = current_text
+        principles[number]["versions"] = [version for version in principles[number]["versions"] if version["status"] != VersionStatus.CURRENT]
 
-        principles[number]["versions"] = [
-            version
-            for version in principles[number]["versions"]
-            if version["status"] != VersionStatus.CURRENT
-        ]
-
-        principles[number]["versions"].append(
-            {
+        principles[number]["versions"].append({
                 "text": current_text,
                 "version_date": parsed_heading["version_date"],
                 "status": VersionStatus.CURRENT,
-            }
-        )
+            })
 
     return [principles[number] for number in sorted(principles)]
 
 
 def delete_existing_constitution_provisions():
-    constitution_documents = LegalDocument.objects.filter(
-        hierarchy_level=HierarchyLevel.CONSTITUTION
-    )
+    constitution_documents = LegalDocument.objects.filter(hierarchy_level=HierarchyLevel.CONSTITUTION)
 
     document_count = constitution_documents.count()
 
@@ -341,16 +291,10 @@ def delete_existing_constitution_provisions():
         print("[INFO] No Constitution LegalDocument found")
         return
 
-    provision_elements = LegalElement.objects.filter(
-        document__in=constitution_documents,
-        element_type=ElementType.PROVISION,
-    )
-
+    provision_elements = LegalElement.objects.filter(document__in=constitution_documents, element_type=ElementType.PROVISION,)
     element_count = provision_elements.count()
-
     print(f"[DELETE] Constitution Documents: {document_count}")
     print(f"[DELETE] Constitution Provision Elements: {element_count}")
-
     provision_elements.delete()
 
 
@@ -358,29 +302,10 @@ def import_constitution(principles, constitution_document):
     created = 0
 
     for order, principle in enumerate(principles, start=1):
-        element = LegalElement.objects.create(
-            document=constitution_document,
-            parent=None,
-            element_type=ElementType.PROVISION,
-            order=order,
-        )
-
-        provision = LegalProvision.objects.create(
-            element=element,
-            provision_type=ProvisionType.CONSTITUTIONAL_PRINCIPLE,
-            number=principle["number"],
-            title=principle["title"],
-            text=principle["text"],
-        )
-
+        element = LegalElement.objects.create(document=constitution_document, parent=None, element_type=ElementType.PROVISION, order=order)
+        provision = LegalProvision.objects.create(element=element, provision_type=ProvisionType.CONSTITUTIONAL_PRINCIPLE, number=principle["number"], title=principle["title"], text=principle["text"])
         for version in principle["versions"]:
-            LegalVersion.objects.create(
-                provision=provision,
-                text=version["text"],
-                version_date=version["version_date"],
-                status=version["status"],
-            )
-
+            LegalVersion.objects.create(provision=provision, text=version["text"], version_date=version["version_date"], status=version["status"])
         created += 1
         print(f"[OK] اصل {principle['number']}")
 
@@ -416,20 +341,12 @@ class Command(BaseCommand):
         input_path = options["input"]
         output_path = options["output"]
         document_id = options["document_id"]
-
         self.stdout.write(f"[INFO] Reading: {input_path}")
-
         principles = parse_constitution_html(input_path)
-
         self.stdout.write(f"[INFO] Parsed {len(principles)} principles.")
 
-        Path(output_path).write_text(
-            json.dumps(principles, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-
+        Path(output_path).write_text(json.dumps(principles, ensure_ascii=False, indent=2), encoding="utf-8")
         self.stdout.write(self.style.SUCCESS(f"[OK] JSON written to {output_path}"))
-
         if options["no_db"]:
             self.stdout.write("[INFO] --no-db specified. Database was not modified.")
             return
@@ -440,21 +357,13 @@ class Command(BaseCommand):
             raise ValueError(f"LegalDocument with id={document_id} does not exist.")
 
         if constitution_document.hierarchy_level != HierarchyLevel.CONSTITUTION:
-            raise ValueError(
-                "The selected LegalDocument does not have hierarchy_level=CONSTITUTION."
-            )
+            raise ValueError("The selected LegalDocument does not have hierarchy_level=CONSTITUTION.")
 
-        self.stdout.write(
-            f"[INFO] Using Constitution document: {constitution_document.title}"
-        )
+        self.stdout.write(f"[INFO] Using Constitution document: {constitution_document.title}")
 
         delete_existing_constitution_provisions()
 
         created = import_constitution(principles, constitution_document)
 
         self.stdout.write("")
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Finished. Created {created} constitutional principles."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Finished. Created {created} constitutional principles."))

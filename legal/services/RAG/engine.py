@@ -4,18 +4,13 @@ from ..llm.client import LLMClient
 from ..retrieval.engine import RetrievalEngine
 from django.conf import settings
 
-
 class RAGEngine:
     def __init__(self, max_results=8):
         print("RAGEngine: initializing engine...")
         self.context_builder = ContextBuilder(max_results=max_results)
         self.prompt_builder = PromptBuilder()
 
-        self.llm_client = LLMClient(
-            api_key=settings.ROUTER_API_KEY,
-            base_url=settings.ROUTER_BASE_URL,
-            model=settings.ROUTER_MODEL,
-        )
+        self.llm_client = LLMClient(api_key=settings.ROUTER_API_KEY, base_url=settings.ROUTER_BASE_URL, model=settings.ROUTER_MODEL)
         self.max_results = max_results
         self.retrieval_engine = RetrievalEngine(device="cpu")
         self.retrieval_engine.connect()
