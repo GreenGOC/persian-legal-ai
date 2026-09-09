@@ -1,0 +1,11 @@
+# Generated from project Python imports and notebook imports
+Django
+python-dotenv
+psycopg2-binary
+hazm
+sentence-transformers
+pymilvus
+openai
+beautifulsoup4
+selenium
+requests

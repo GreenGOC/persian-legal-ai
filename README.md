@@ -63,15 +63,15 @@ This starts:
 
 ## 2) Install Python dependencies
 
-Create and activate a virtual environment if you use one, then install the project’s Python dependencies.
-
-Example:
+Create and activate a virtual environment if you use one, then install the project’s Python dependencies from the repository root:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install django python-dotenv psycopg2-binary hazm sentence-transformers
+pip install -r requirements.txt
 ```
+
+The file `requirements.txt` is generated from the Python modules and notebook imports used across the project, so it captures the backend runtime packages needed for Django, embeddings, retrieval, and data preprocessing.
 
 If your environment already contains the required packages, skip this step.
 
