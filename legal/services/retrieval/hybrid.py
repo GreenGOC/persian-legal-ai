@@ -11,7 +11,7 @@ class HybridRetriever:
     def _rrf_score(self, rank, weight):
         return weight / (self.rrf_k + rank)
 
-    def search(self, query, top_k=30, retrieval_k=100):
+    def search(self, query, top_k=200, retrieval_k=100):
         bm25_results = self.bm25_retriever.search(query, top_k=retrieval_k)
         dense_results = self.dense_retriever.search(query, top_k=retrieval_k)
         scores = {}

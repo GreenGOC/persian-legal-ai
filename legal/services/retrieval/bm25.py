@@ -238,7 +238,7 @@ class BM25Retriever:
         self.bm25 = BM25(document_count=document_count, average_document_length=average_document_length, document_frequencies=document_frequencies,)
         top_results = []
 
-        for root_id, provisions in search_documents.items():
+        for _, provisions in search_documents.items():
             text = self._build_document_text(provisions, parent_by_element_id, structural_by_element_id)
             tokens = text.split()
             if not tokens:
