@@ -34,7 +34,7 @@ def resolve_local_model_path(model_path):
 
 
 class Reranker:
-    MIN_SCORE = 0.50
+    MIN_SCORE = 0.35
     MAX_SCORE_GAP = 0.2
 
     def __init__(self, model_name=None, max_length=512, device=None):

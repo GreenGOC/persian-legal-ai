@@ -1,13 +1,15 @@
 from .logging import write_last_query_log
 
 class HybridRetriever:
-    def __init__(self, bm25_retriever=None, dense_retriever=None, rrf_k=60):
+    def __init__(self, bm25_retriever=None, dense_retriever=None, rrf_k=60, bm25_weight=1.0, dense_weight=1.2):
         self.bm25_retriever = bm25_retriever
         self.dense_retriever = dense_retriever
         self.rrf_k = rrf_k
+        self.bm25_weight = bm25_weight
+        self.dense_weight = dense_weight
 
-    def _rrf_score(self, rank):
-        return 1.0 / (self.rrf_k + rank)
+    def _rrf_score(self, rank, weight):
+        return weight / (self.rrf_k + rank)
 
     def search(self, query, top_k=30, retrieval_k=100):
         bm25_results = self.bm25_retriever.search(query, top_k=retrieval_k)
@@ -18,7 +20,7 @@ class HybridRetriever:
             provision = result["provision"]
             provision_id = provision.id
             scores.setdefault(provision_id, 0.0)
-            scores[provision_id] += self._rrf_score(rank)
+            scores[provision_id] += self._rrf_score(rank, self.bm25_weight)
             groups[provision_id] = {
                 "provision": provision,
                 "children": result.get("children", []),
@@ -28,7 +30,7 @@ class HybridRetriever:
             provision = result["provision"]
             provision_id = provision.id
             scores.setdefault(provision_id, 0.0)
-            scores[provision_id] += self._rrf_score(rank)
+            scores[provision_id] += self._rrf_score(rank, self.dense_weight)
             if provision_id not in groups:
                 groups[provision_id] = {
                     "provision": provision,

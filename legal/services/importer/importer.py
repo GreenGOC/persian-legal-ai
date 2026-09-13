@@ -365,39 +365,63 @@ def create_provision_element(document: LegalDocument, parent: Optional[LegalElem
     text = normalize_text(node.get("text", ""))
     if not text:
         return None, order
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    lines = text.splitlines()
+    while lines and not lines[0].strip():
+        lines.pop(0)
+
+    if not lines:
+        return None, order
+    version_date = document.approval_date
+    while lines:
+        while lines and not lines[0].strip():
+            lines.pop(0)
+        if not lines:
+            return None, order
+
+        first_line = lines[0]
+        version_match = re.search(
+            r"\[\s*"
+            r"(?:اصلاحی|اصلاحیه|الحاقی)?\s*"
+            r"([0-9۰-۹٠-٩]{4}\s*/\s*[0-9۰-۹٠-٩]{1,2}\s*/\s*[0-9۰-۹٠-٩]{1,2})"
+            r"\s*\]",
+            first_line,
+        )
+
+        if version_match:
+            version_date = version_match.group(1)
+            first_line = re.sub(
+                r"\[\s*"
+                r"(?:اصلاحی|اصلاحیه|الحاقی)?\s*"
+                r"[0-9۰-۹٠-٩]{4}\s*/\s*[0-9۰-۹٠-٩]{1,2}\s*/\s*[0-9۰-۹٠-٩]{1,2}"
+                r"\s*\]",
+                "",
+                first_line,
+                count=1,
+            ).strip()
+            lines[0] = first_line
+            if not lines[0]:
+                lines.pop(0)
+                continue
+            break
+        break
     if not lines:
         return None, order
 
-    if re.search(
-        r"\[\s*(?:اصلاحی|اصلاحیه|الحاقی)?\s*"
-        r"[0-9۰-۹٠-٩]{4}\s*/\s*"
-        r"[0-9۰-۹٠-٩]{1,2}\s*/\s*"
-        r"[0-9۰-۹٠-٩]{1,2}\s*\]",
-        lines[0],
-    ):
-        version_marker = lines[0]
-        if len(lines) >= 2:
-            lines = lines[1:]
-        else:  # This means the provision has no text other than that
-            return None, order
-        version_date = extract_version_date(version_marker, document.approval_date)
+    main_text = lines[0].strip()
+    extra_text = "\n".join(line.strip() for line in lines[1:] if line.strip())
 
-    else:
-        version_date = document.approval_date
-
-    main_text = lines[0]
-    extra_text = "\n".join(lines[1:])
     number = extract_provision_number(header, subtype)
     title = extract_provision_title(header, subtype)
+
     element = LegalElement.objects.create(document=document, parent=parent, element_type=ElementType.PROVISION, order=order)
     provision = LegalProvision.objects.create(element=element, provision_type=subtype, number=number, title=title, text=main_text)
     LegalVersion.objects.create(provision=provision, version_date=version_date, text=main_text)
     new_order = order + 1
+
     if extra_text:
-        other_element = LegalElement.objects.create(document=document, parent=parent, element_type=ElementType.PROVISION, order=new_order)
+        other_element = LegalElement.objects.create(document=document, parent=element, element_type=ElementType.PROVISION, order=new_order)
         other_provision = LegalProvision.objects.create(element=other_element, provision_type=ProvisionType.OTHER, number="", title="متفرقه", text=extra_text)
-        LegalVersion.objects.create(provision=other_provision, version_date=document.approval_date, text=extra_text)
+        LegalVersion.objects.create(provision=other_provision, version_date=version_date, text=extra_text)
         new_order += 1
     return element, new_order
 
