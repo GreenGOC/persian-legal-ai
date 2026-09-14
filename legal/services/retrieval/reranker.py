@@ -81,7 +81,8 @@ class Reranker:
             parts.append(self._build_provision_text(child))
             
         return "\n".join(parts)
-    def rerank(self, query, results, top_k=100):
+    
+    def rerank(self, query, results, top_k=50):
         if not results:
             return []
         
@@ -93,12 +94,15 @@ class Reranker:
                 "children": result.get("children", [])
             } for result, score in zip(results, scores)
         ]
+        reranked_results.sort(key=lambda result: result["score"], reverse=True)
+        final_results = reranked_results[:top_k]
+
         try:
-            write_last_query_log("reranker", query, reranked_results)
+            write_last_query_log("reranker", query, final_results)
         except Exception as e:
             pass
         
-        return reranked_results
+        return final_results
         # print("RERANKING")
         # docs = [self._get_text(result) for result in results]
         # response = self.model.rerank(model=self.model_name, query=query, documents=docs, top_n=top_k)

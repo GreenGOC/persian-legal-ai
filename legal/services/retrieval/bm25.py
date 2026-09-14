@@ -71,55 +71,12 @@ class BM25Retriever:
     def _get_queryset(self):
         return LegalProvision.objects.select_related("element__document").order_by("id")
 
-    def _to_persian_digits(self, value):
-        if value is None:
-            return ""
-
-        return str(value).translate(
-            str.maketrans(
-                "0123456789٠١٢٣٤٥٦٧٨٩",
-                "۰۱۲۳۴۵۶۷۸۹۰۱۲۳۴۵۶۷۸۹",
-            )
-        )
-
     def _get_provision_type_label(self, provision):
         return self.PROVISION_TYPE_LABELS.get(provision.provision_type, "مقرره")
 
     def _get_structural_type_label(self, structural):
         return self.STRUCTURAL_TYPE_LABELS.get(structural.structural_type, "بخش")
 
-    def _get_root_provision(self, provision, parent_by_element_id, element_type_by_id, provision_by_element_id, root_cache):
-        element_id = provision.element_id
-
-        if element_id in root_cache:
-            return root_cache[element_id]
-
-        path = []
-        current_id = element_id
-
-        while current_id is not None:
-            if current_id in root_cache:
-                root_id = root_cache[current_id]
-                break
-
-            path.append(current_id)
-
-            parent_id = parent_by_element_id.get(current_id)
-
-            if parent_id is None:
-                root_id = current_id
-                break
-
-            if element_type_by_id.get(parent_id) == ElementType.STRUCTURAL:
-                root_id = current_id
-                break
-
-            current_id = parent_id
-
-        for path_element_id in path:
-            root_cache[path_element_id] = root_id
-
-        return provision_by_element_id.get(root_id)
 
     def _build_search_documents(self, queryset):
         provisions = list(queryset)
@@ -131,20 +88,50 @@ class BM25Retriever:
 
         groups = {}
         root_cache = {}
+        
+        def get_root_element_id(element_id):
+            if element_id in root_cache:
+                return root_cache[element_id]
+            
+            path=[]
+            current_id = element_id
+            while current_id is not None:
+                if current_id in root_cache:
+                    root_element_id = root_cache[current_id]
+                    break
+
+                path.append(current_id)
+                parent_id = parent_by_element_id.get(current_id)
+                if parent_id is None:
+                    root_element_id = current_id
+                    break
+
+                if element_type_by_id.get(parent_id) == ElementType.STRUCTURAL:
+                    root_element_id = current_id
+                    break
+
+                current_id = parent_id
+
+            for path_element_id in path:
+                root_cache[path_element_id] = root_element_id
+
+            return root_element_id
 
         for provision in provisions:
-            root_provision = self._get_root_provision(provision, parent_by_element_id, element_type_by_id, provision_by_element_id, root_cache)
-
+            root_element_id = get_root_element_id(provision.element_id)
+            root_provision = provision_by_element_id.get(root_element_id)
             if root_provision is None:
                 continue
-
-            groups.setdefault(root_provision.id, []).append(provision)
+            root_id = root_provision.id
+            if root_id not in groups:
+                groups[root_id] = []
+            groups[root_id].append(provision)
 
         return groups, parent_by_element_id
 
     def _build_provision_text(self, provision):
         provision_type = self._get_provision_type_label(provision)
-        number = self._to_persian_digits(provision.number).strip()
+        number = str(provision.number).strip()
         title = provision.title.strip() if provision.title else ""
         text = provision.text.strip() if provision.text else ""
 
@@ -172,7 +159,7 @@ class BM25Retriever:
 
             if structural:
                 structural_type = self._get_structural_type_label(structural)
-                number = self._to_persian_digits(structural.number).strip()
+                number = str(structural.number).strip()
                 title = structural.title.strip() if structural.title else ""
 
                 if number and title:
@@ -189,7 +176,7 @@ class BM25Retriever:
 
     def _build_root_text(self, root_provision, parent_by_element_id, structural_by_element_id):
         provision_type = self._get_provision_type_label(root_provision)
-        number = self._to_persian_digits(root_provision.number).strip()
+        number = str(root_provision.number).strip()
         title = root_provision.title.strip() if root_provision.title else ""
         text = root_provision.text.strip() if root_provision.text else ""
         parts = [f"{provision_type} {number}".strip()]
@@ -248,7 +235,7 @@ class BM25Retriever:
         self.initialized = True
         print(f"BM25 initialized: {document_count} documents")
 
-    def search(self, query, top_k=30):
+    def search(self, query, top_k=100):
         if not self.initialized:
             self.initialize()
         query_tokens = query.split()
