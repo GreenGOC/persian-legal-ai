@@ -32,12 +32,16 @@ SECRET_KEY = "django-insecure-ri45nn6f*^zvydec$^2$k)w0-#^!ym_r@_x4e7q^odp)kr)cqi
 DEBUG = True
 # FFFFFF
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
+    "http://0.0.0.0:5173",
+    "http://0.0.0.0:3000",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+
 ]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 ROUTER_API_KEY = os.getenv("ROUTER_API")
 ROUTER_BASE_URL = os.getenv("ROUTER_BASE_URL", "https://openrouter.ai/api/v1")
@@ -136,6 +140,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = "static/"
+
+# CORS settings: allow frontend served from localhost:3000
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Allow cookies from frontend if needed
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Email

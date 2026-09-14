@@ -6,6 +6,7 @@ from legal.models import ElementType, LegalElement, LegalProvision, StructuralEl
 
 from .logging import write_last_query_log
 
+
 class BM25:
     def __init__(self, document_count, average_document_length, document_frequencies, k1=1.5, b=0.75):
         self.document_count = document_count
@@ -26,6 +27,7 @@ class BM25:
             return 0.0
 
         score = 0.0
+
         for term in query:
             frequency = term_frequencies.get(term, 0)
             if frequency == 0:
@@ -34,7 +36,9 @@ class BM25:
             idf = self._idf(term)
             numerator = frequency * (self.k1 + 1)
             denominator = frequency + self.k1 * (1 - self.b + self.b * document_length / self.average_document_length)
+
             score += idf * numerator / denominator
+
         return score
 
 
@@ -61,6 +65,8 @@ class BM25Retriever:
 
     def __init__(self):
         self.bm25 = None
+        self.documents = {}
+        self.initialized = False
 
     def _get_queryset(self):
         return LegalProvision.objects.select_related("element__document").order_by("id")
@@ -84,24 +90,27 @@ class BM25Retriever:
 
     def _get_root_provision(self, provision, parent_by_element_id, element_type_by_id, provision_by_element_id, root_cache):
         element_id = provision.element_id
+
         if element_id in root_cache:
             return root_cache[element_id]
 
         path = []
         current_id = element_id
+
         while current_id is not None:
             if current_id in root_cache:
                 root_id = root_cache[current_id]
                 break
 
             path.append(current_id)
+
             parent_id = parent_by_element_id.get(current_id)
+
             if parent_id is None:
                 root_id = current_id
                 break
 
-            parent_type = element_type_by_id.get(parent_id)
-            if parent_type == ElementType.STRUCTURAL:
+            if element_type_by_id.get(parent_id) == ElementType.STRUCTURAL:
                 root_id = current_id
                 break
 
@@ -115,22 +124,22 @@ class BM25Retriever:
     def _build_search_documents(self, queryset):
         provisions = list(queryset)
         elements = list(LegalElement.objects.only("id", "parent_id", "element_type").order_by("id"))
+
         parent_by_element_id = {element.id: element.parent_id for element in elements}
         element_type_by_id = {element.id: element.element_type for element in elements}
         provision_by_element_id = {provision.element_id: provision for provision in provisions}
+
         groups = {}
         root_cache = {}
 
         for provision in provisions:
             root_provision = self._get_root_provision(provision, parent_by_element_id, element_type_by_id, provision_by_element_id, root_cache)
+
             if root_provision is None:
                 continue
 
-            root_id = root_provision.id
-            if root_id not in groups:
-                groups[root_id] = []
+            groups.setdefault(root_provision.id, []).append(provision)
 
-            groups[root_id].append(provision)
         return groups, parent_by_element_id
 
     def _build_provision_text(self, provision):
@@ -138,8 +147,9 @@ class BM25Retriever:
         number = self._to_persian_digits(provision.number).strip()
         title = provision.title.strip() if provision.title else ""
         text = provision.text.strip() if provision.text else ""
-        prefix = f"{provision_type} {number}".strip()
-        parts = [prefix]
+
+        parts = [f"{provision_type} {number}".strip()]
+
         if title:
             parts.append(title)
 
@@ -151,16 +161,20 @@ class BM25Retriever:
     def _build_structural_text(self, provision, parent_by_element_id, structural_by_element_id):
         parts = []
         current_id = provision.element_id
+
         while current_id is not None:
             parent_id = parent_by_element_id.get(current_id)
+
             if parent_id is None:
                 break
 
             structural = structural_by_element_id.get(parent_id)
-            if structural is not None:
+
+            if structural:
                 structural_type = self._get_structural_type_label(structural)
                 number = self._to_persian_digits(structural.number).strip()
                 title = structural.title.strip() if structural.title else ""
+
                 if number and title:
                     parts.append(f"{structural_type} {number}: {title}")
                 elif number:
@@ -169,6 +183,7 @@ class BM25Retriever:
                     parts.append(f"{structural_type}: {title}")
 
             current_id = parent_id
+
         parts.reverse()
         return " ".join(parts)
 
@@ -177,8 +192,7 @@ class BM25Retriever:
         number = self._to_persian_digits(root_provision.number).strip()
         title = root_provision.title.strip() if root_provision.title else ""
         text = root_provision.text.strip() if root_provision.text else ""
-        prefix = f"{provision_type} {number}".strip()
-        parts = [prefix]
+        parts = [f"{provision_type} {number}".strip()]
         if title:
             parts.append(title)
 
@@ -189,78 +203,74 @@ class BM25Retriever:
         document = root_provision.element.document
         if document.title:
             parts.append(document.title.strip())
-
         if text:
             parts.append(text)
-
         return ": ".join(parts)
 
     def _build_document_text(self, provisions, parent_by_element_id, structural_by_element_id):
-        if not provisions:
-            return ""
-
         root_provision = provisions[0]
         parts = [self._build_root_text(root_provision, parent_by_element_id, structural_by_element_id)]
         parts.extend(self._build_provision_text(provision) for provision in provisions[1:])
         return "\n".join(parts)
 
-    def _build_statistics(self, search_documents, query_tokens, parent_by_element_id, structural_by_element_id):
-        document_count = 0
-        total_document_length = 0
-        document_frequencies = Counter()
-        query_terms = set(query_tokens)
-        for provisions in search_documents.values():
-            text = self._build_document_text(provisions, parent_by_element_id, structural_by_element_id)
-            tokens = text.split()
-            if not tokens:
-                continue
-            document_count += 1
-            total_document_length += len(tokens)
-            terms_in_document = set(tokens)
-            for term in query_terms:
-                if term in terms_in_document:
-                    document_frequencies[term] += 1
+    def initialize(self):
+        if self.initialized:
+            return
 
-        average_document_length = total_document_length / document_count if document_count else 0
-        return document_count, average_document_length, document_frequencies
-
-    def search(self, query, top_k=30):
-        queryset = self._get_queryset()
-        query_tokens = query.split()
-        if not query_tokens:
-            return []
-
-        search_documents, parent_by_element_id = self._build_search_documents(queryset)
+        search_documents, parent_by_element_id = self._build_search_documents(self._get_queryset())
         structural_elements = list(StructuralElement.objects.only("element_id", "structural_type", "number", "title"))
         structural_by_element_id = {structural.element_id: structural for structural in structural_elements}
-        document_count, average_document_length, document_frequencies = self._build_statistics(search_documents, query_tokens, parent_by_element_id, structural_by_element_id)
 
-        self.bm25 = BM25(document_count=document_count, average_document_length=average_document_length, document_frequencies=document_frequencies,)
-        top_results = []
+        document_frequencies = Counter()
+        document_count = 0
+        total_document_length = 0
 
-        for _, provisions in search_documents.items():
+        for root_id, provisions in search_documents.items():
             text = self._build_document_text(provisions, parent_by_element_id, structural_by_element_id)
             tokens = text.split()
             if not tokens:
                 continue
 
             term_frequencies = Counter(tokens)
-            score = self.bm25.score(query=query_tokens, document_length=len(tokens), term_frequencies=term_frequencies)
+            self.documents[root_id] = {
+                "provision": provisions[0],
+                "children": provisions,
+                "length": len(tokens),
+                "term_frequencies": term_frequencies,
+            }
+            document_count += 1
+            total_document_length += len(tokens)
+            for term in set(tokens):
+                document_frequencies[term] += 1
+
+        average_document_length = total_document_length / document_count if document_count else 0
+        self.bm25 = BM25(document_count=document_count, average_document_length=average_document_length, document_frequencies=document_frequencies)
+        self.initialized = True
+        print(f"BM25 initialized: {document_count} documents")
+
+    def search(self, query, top_k=30):
+        if not self.initialized:
+            self.initialize()
+        query_tokens = query.split()
+        if not query_tokens:
+            return []
+        top_results = []
+        for document in self.documents.values():
+            score = self.bm25.score(query=query_tokens, document_length=document["length"], term_frequencies=document["term_frequencies"])
             if score <= 0:
                 continue
-            
-            root_provision = provisions[0]
-            top_results.append((score, root_provision, provisions))
+
+            top_results.append((score, document["provision"], document["children"]))
             if len(top_results) > top_k:
                 top_results = nlargest(top_k, top_results, key=lambda item: item[0])
-                
+
         top_results.sort(key=lambda item: item[0], reverse=True)
         results = [{
                 "provision": root_provision,
                 "score": score,
                 "children": provisions,
-            } for score, root_provision, provisions in top_results]
-        
+            }
+            for score, root_provision, provisions in top_results]
         try:
             write_last_query_log("bm25", query, results)
         except Exception:
