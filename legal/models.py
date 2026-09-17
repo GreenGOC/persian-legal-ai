@@ -62,14 +62,47 @@ class ProvisionType(models.TextChoices):
 class RelationshipType(models.TextChoices):
     AMENDS = "amends", "Amends"
     MODIFIES = "modifies", "Modifies"
-    REPEALS = "repeals", "Repeals"
-    REPLACES = "replaces", "Replaces"
-    REFERENCES = "references", "References"
     ADDS = "adds", "Adds"
-    CONFLICTS = "conflicts", "Conflicts"
-    IDENTICAL = "identical", "Identical"
-    RELATED = "related", "Related"
+    REMOVES = "removes", "Removes"
+    REPLACES = "replaces", "Replaces"
 
+    REPEALS = "repeals", "Repeals"
+    CANCELS = "cancels", "Cancels"
+    ANNULS = "annuls", "Annuls"
+    SUSPENDS = "suspends", "Suspends"
+    REVIVES = "revives", "Revives"
+    EXTENDS = "extends", "Extends"
+    EXPIRES = "expires", "Expires"
+
+    CONFLICTS = "conflicts", "Conflicts"
+
+    TAKHSIS = "takhsis", "Takhsis"
+    TAQYID = "taqyid", "Taqyid"
+    TAKHASSOS = "takhassos", "Takhassos"
+    HOKUMAT = "hokumat", "Hokumat"
+
+    REFERENCES = "references", "References"
+
+    ELABORATES = "elaborates", "Elaborates"
+    IMPLEMENTS = "implements", "Implements"
+
+    IDENTICAL = "identical", "Identical"
+    
+    
+class NoteType(models.TextChoices):
+    INTERPRETATION = "interpretation", "Interpretation"
+    JUDICIAL_DECISION = "judicial_decision", "Judicial Decision"
+    LEGAL_OPINION = "legal_opinion", "Legal Opinion"
+
+    TAKHSIS = "takhsis", "Takhsis"
+    TAQYID = "taqyid", "Taqyid"
+    TAKHASSOS = "takhassos", "Takhassos"
+
+    ANNULMENT = "annulment", "Annulment"
+    EXPIRATION = "expiration", "Expiration"
+
+    OTHER = "other", "Other"
+    
 
 class VersionStatus(models.TextChoices):
     CURRENT = "current", "Current"
@@ -289,9 +322,7 @@ class LegalRelationship(models.Model):
 
 
 class RelationshipContext(models.Model):
-    relationship = models.ForeignKey(
-        LegalRelationship, on_delete=models.CASCADE, related_name="contexts"
-    )
+    relationship = models.ForeignKey(LegalRelationship, on_delete=models.CASCADE, related_name="contexts")
     source_text = models.TextField(blank=True)
     target_text = models.TextField(blank=True)
     old_text = models.TextField(blank=True)
@@ -303,3 +334,16 @@ class RelationshipContext(models.Model):
     reference_provisions = models.JSONField(default=list, blank=True)
     evidence = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    
+class LegalNote(models.Model):
+    provision = models.ForeignKey(LegalProvision, on_delete=models.CASCADE, related_name="notes")
+    source_document = models.ForeignKey(LegalDocument, on_delete=models.CASCADE, related_name="notes")
+    note_type = models.CharField(max_length=50, choices=NoteType.choices)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        indexes = [
+            models.Index(fields=["provision", "note_type"]),
+            models.Index(fields=["source_document", "note_type"]),
+        ]
