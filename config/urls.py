@@ -18,8 +18,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from legal.views import chat
+from legal import views as legal_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/chat/", chat, name="chat"),
+    path("api/documents/", legal_views.documents_list, name="documents_list"),
+    path("api/documents/<int:doc_id>/provisions/", legal_views.document_provisions, name="document_provisions"),
+    path("api/relationships/", legal_views.relationships, name="relationships"),
 ]

@@ -194,16 +194,18 @@ STRUCTURAL_MARKERS = {
 }
 
 
-def detect_structural_type(node: Dict[str, Any]) -> Optional[str]:
+def detect_structural_type(node):
+    node_type = normalize_text(node.get("type", "")).lower()
+    if node_type in {"unscoped", "introduction"}:
+        return StructuralType.OTHER
+
     marker = normalize_text(node.get("marker", ""))
     header = normalize_text(node.get("header", ""))
-
     for key, structural_type in STRUCTURAL_MARKERS.items():
         if marker == key:
             return structural_type
 
     combined = f"{marker} {header}".strip()
-
     for key, structural_type in STRUCTURAL_MARKERS.items():
         if combined.startswith(key):
             return structural_type
@@ -340,15 +342,12 @@ def determine_parent(stack: List[Dict[str, Any]], element_type: str, subtype: st
     return stack[-1]["element"] if stack else None
 
 
-def create_structural_element(document: LegalDocument, parent: Optional[LegalElement], order: int, subtype: str, node: Dict[str, Any]) -> LegalElement:
-    element = LegalElement.objects.create(
-        document=document,
-        parent=parent,
-        element_type=ElementType.STRUCTURAL,
-        order=order,
-    )
+def create_structural_element(document, parent, order, subtype, node):
+    element = LegalElement.objects.create(document=document, parent=parent, element_type=ElementType.STRUCTURAL, order=order)
     header = normalize_text(node.get("header", ""))
     marker = normalize_text(node.get("marker", ""))
+    node_type = normalize_text(node.get("type", "")).lower()
+
     title = header
     number = ""
     if marker:
@@ -357,71 +356,44 @@ def create_structural_element(document: LegalDocument, parent: Optional[LegalEle
             number = normalise_digits(number_match.group(0))
 
     StructuralElement.objects.create(element=element, structural_type=subtype, title=title, number=number)
-    return element, order + 1
+    new_order = order + 1
+    text = normalize_text(node.get("text", ""))
+    if text:
+        provision_element = LegalElement.objects.create(document=document, parent=element, element_type=ElementType.PROVISION, order=new_order)
+        provision = LegalProvision.objects.create(element=provision_element, provision_type=ProvisionType.OTHER, number="", title=header if header else node_type, text=text)
+        LegalVersion.objects.create(provision=provision, text=text)
+        new_order += 1
+    return element, new_order
 
 
-def create_provision_element(document: LegalDocument, parent: Optional[LegalElement], order: int, subtype: str, node: Dict[str, Any]) -> LegalElement:
+def create_provision_element(document, parent, order, subtype, node):
     header = normalize_text(node.get("header", ""))
     text = normalize_text(node.get("text", ""))
-    if not text:
-        return None, order
-    lines = text.splitlines()
-    while lines and not lines[0].strip():
-        lines.pop(0)
 
-    if not lines:
-        return None, order
-    version_date = document.approval_date
-    while lines:
-        while lines and not lines[0].strip():
-            lines.pop(0)
-        if not lines:
-            return None, order
-
-        first_line = lines[0]
-        version_match = re.search(
-            r"\[\s*"
-            r"(?:اصلاحی|اصلاحیه|الحاقی)?\s*"
-            r"([0-9۰-۹٠-٩]{4}\s*/\s*[0-9۰-۹٠-٩]{1,2}\s*/\s*[0-9۰-۹٠-٩]{1,2})"
-            r"\s*\]",
-            first_line,
-        )
-
-        if version_match:
-            version_date = version_match.group(1)
-            first_line = re.sub(
-                r"\[\s*"
-                r"(?:اصلاحی|اصلاحیه|الحاقی)?\s*"
-                r"[0-9۰-۹٠-٩]{4}\s*/\s*[0-9۰-۹٠-٩]{1,2}\s*/\s*[0-9۰-۹٠-٩]{1,2}"
-                r"\s*\]",
-                "",
-                first_line,
-                count=1,
-            ).strip()
-            lines[0] = first_line
-            if not lines[0]:
-                lines.pop(0)
-                continue
-            break
-        break
-    if not lines:
+    if not text and not header:
         return None, order
 
-    main_text = lines[0].strip()
-    extra_text = "\n".join(line.strip() for line in lines[1:] if line.strip())
+    lines = text.splitlines() if text else []
+    lines = [line.strip() for line in lines if line.strip()]
+
+    main_text = lines[0] if lines else ""
+    extra_text = "\n".join(lines[1:]) if len(lines) > 1 else ""
 
     number = extract_provision_number(header, subtype)
     title = extract_provision_title(header, subtype)
 
+    if not main_text:
+        main_text = header
+
     element = LegalElement.objects.create(document=document, parent=parent, element_type=ElementType.PROVISION, order=order)
     provision = LegalProvision.objects.create(element=element, provision_type=subtype, number=number, title=title, text=main_text)
-    LegalVersion.objects.create(provision=provision, version_date=version_date, text=main_text)
+    LegalVersion.objects.create(provision=provision, text=main_text)
     new_order = order + 1
 
     if extra_text:
         other_element = LegalElement.objects.create(document=document, parent=element, element_type=ElementType.PROVISION, order=new_order)
-        other_provision = LegalProvision.objects.create(element=other_element, provision_type=ProvisionType.OTHER, number="", title="متفرقه", text=extra_text)
-        LegalVersion.objects.create(provision=other_provision, version_date=version_date, text=extra_text)
+        other_provision = LegalProvision.objects.create(element=other_element, provision_type=ProvisionType.OTHER, title="متفرقه", text=extra_text)
+        LegalVersion.objects.create(provision=other_provision, text=extra_text)
         new_order += 1
     return element, new_order
 

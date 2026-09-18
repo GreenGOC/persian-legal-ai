@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import DocsPanel from './components/DocsPanel'
 
 const STORAGE_KEY = 'legal-ai-conversations'
 const THEME_KEY = 'legal-ai-theme'
@@ -31,6 +32,7 @@ export default function App() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [docsOpen, setDocsOpen] = useState(false)
   const inputRef = useRef(null)
   const messagesRef = useRef(null)
   const activeConversation = conversations.find((item) => item.id === activeId) || conversations[0]
@@ -99,11 +101,11 @@ export default function App() {
     })
   }
 
-  return <main className="app-shell" dir="rtl">
+  return <main className={docsOpen ? 'app-shell panel-open' : 'app-shell'} dir="rtl">
     <header className="topbar">
       <button className="icon-button menu-button" onClick={() => setHistoryOpen(true)} aria-label="تاریخچه گفتگوها"><Icon name="menu" /></button>
       <div className="topbar-actions">
-        <button className="theme-button" onClick={() => setTheme((value) => value === 'light' ? 'dark' : 'light')} aria-label="تغییر رنگ‌بندی">{theme === 'light' ? <Icon name="moon" size={21} /> : <Icon name="sun" size={21} />}</button>
+        {/* theme toggle moved to floating hover button */}
       </div>
     </header>
 
@@ -115,5 +117,11 @@ export default function App() {
     </section>
 
 
+    <button className="docs-toggle-button" aria-label="نمایش اسناد قانونی" title="اسناد" onClick={() => setDocsOpen(true)}>
+      <span className="ringbinder" />
+    </button>
+    <DocsPanel open={docsOpen} onClose={() => setDocsOpen(false)} />
+
+    <button className="floating-theme-button" aria-label="تغییر رنگ‌بندی" onClick={() => setTheme((value) => value === 'light' ? 'dark' : 'light')}>{theme === 'light' ? '🌙' : '☀️'}</button>
   </main>
 }

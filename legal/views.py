@@ -4,6 +4,10 @@ from functools import lru_cache
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
+from django.shortcuts import get_object_or_404
+from django.db.models import Q
+from .models import LegalDocument, LegalProvision, LegalVersion, LegalRelationship, RelationshipContext
 
 
 @lru_cache(maxsize=1)
@@ -51,3 +55,228 @@ def chat(request):
         return JsonResponse({"answer": result})
     print("Django: returning fallback string response from /api/chat/")
     return JsonResponse({"answer": str(result)})
+
+
+@require_GET
+def documents_list(request):
+    # Pagination and search
+    try:
+        page = int(request.GET.get('page', '1'))
+        if page < 1:
+            page = 1
+    except Exception:
+        page = 1
+    try:
+        per_page = int(request.GET.get('per_page', '100'))
+        per_page = max(1, min(1000, per_page))
+    except Exception:
+        per_page = 100
+
+    q = request.GET.get('q', '') or request.GET.get('query', '')
+    qs = LegalDocument.objects.all()
+    if q:
+        # split by comma or whitespace, chain filters (AND) where each token must appear in title or subject
+        import re
+        tokens = [t.strip() for t in re.split('[,\s]+', q) if t.strip()]
+        for token in tokens:
+            qs = qs.filter(Q(title__icontains=token) | Q(subject__icontains=token))
+
+    total_count = qs.count()
+    total_pages = (total_count + per_page - 1) // per_page if per_page else 1
+    start = (page - 1) * per_page
+    end = start + per_page
+    docs = qs.order_by('title')[start:end]
+
+    result = []
+    for d in docs:
+        outgoing_count = LegalRelationship.objects.filter(source__element__document=d).count()
+        incoming_count = LegalRelationship.objects.filter(target__element__document=d).count()
+        desc = d.subject or d.document_type or ''
+        rel_summary = f"روابط: {outgoing_count} ↑ / {incoming_count} ↓"
+        summary = (desc + ' • ' + rel_summary).strip(' • ')
+        result.append({
+            "id": d.id,
+            "title": d.title,
+            "description": summary,
+            "outgoing_relationships": outgoing_count,
+            "incoming_relationships": incoming_count,
+        })
+
+    return JsonResponse({
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "results": result,
+    }, safe=False)
+
+
+@require_GET
+def document_provisions(request, doc_id):
+    # Return provisions for a given document id
+    document = get_object_or_404(LegalDocument, pk=doc_id)
+    elements = document.elements.select_related('provision', 'structural').order_by('order', 'id')
+    # We'll produce sections containing only provisions. Structural titles like
+    # 'متفرقه' or 'introduction' will not be rendered as their own section;
+    # instead their provisions will be attached to the closest previous provision.
+    # Sentences are tokenized using hazm when available.
+    try:
+        from hazm import sent_tokenize as _hz_sent_tokenize
+    except Exception:
+        import re
+
+        def _hz_sent_tokenize(text):
+            if not text:
+                return []
+            parts = re.split(r'(?<=[\.!؟!?])\s+', text.strip())
+            return [p.strip() for p in parts if p.strip()]
+
+    # Collect provisions in document order along with their enclosing structural title
+    provisions_seq = []
+    current_struct = ''
+    for el in elements:
+        if el.element_type == 'structural' and hasattr(el, 'structural'):
+            current_struct = el.structural.title or ''
+            continue
+
+        if el.element_type == 'provision' and hasattr(el, 'provision'):
+            p = el.provision
+            # collect version extras
+            versions = []
+            texts = []
+            if p.text:
+                texts.append(p.text)
+            for v in p.versions.all().order_by('created_at'):
+                if v.text and v.text != p.text:
+                    versions.append({"text": v.text, "version_date": v.version_date, "status": v.status})
+                    texts.append(v.text)
+
+            combined = "\n\n".join(texts).strip()
+            sentences = _hz_sent_tokenize(combined)
+
+            prov_entry = {
+                "id": p.id,
+                "provision_type": p.provision_type,
+                "number": p.number,
+                # display label: type + number
+                # Map internal provision_type to Persian label; do not render 'other'
+                "display_label": (
+                    ("" if p.provision_type == 'other' else (
+                        {
+                            'constitutional_principle': 'اصل',
+                            'article': 'ماده',
+                            'note': 'تبصره',
+                            'clause': 'بند',
+                            'subclause': 'تبصره فرعی',
+                            'item': 'مورد',
+                        }.get(p.provision_type, p.provision_type)
+                    ) + (f" {p.number}" if p.number else "")).strip()),
+                "sentences": sentences,
+                "versions": versions,
+            }
+            provisions_seq.append({"structural": current_struct or '', "provision": prov_entry})
+
+    # Build sections; skip structural titles that are considered 'misc' and attach
+    # their provisions to the previous provision.
+    skip_titles = {"متفرقه", "introduction", "مقدمه"}
+    sections = []
+    last_provision = None
+    for item in provisions_seq:
+        struct_title = (item.get('structural') or '').strip()
+        prov = item['provision']
+        struct_norm = struct_title.strip().lower()
+        if struct_norm in {s.lower() for s in skip_titles}:
+            # Attach to previous provision if present
+            if last_provision is not None:
+                last_provision['sentences'].extend(prov.get('sentences', []))
+                # also append versions if any
+                last_provision.setdefault('versions', []).extend(prov.get('versions', []))
+            else:
+                # no previous provision; create/append to a generic unnamed section
+                if not sections:
+                    sections.append({"title": "", "provisions": [prov]})
+                    last_provision = sections[-1]['provisions'][-1]
+                else:
+                    sections[-1]['provisions'].append(prov)
+                    last_provision = sections[-1]['provisions'][-1]
+            continue
+
+        # normal structural: create or append to a section with only the structural title
+        if sections and sections[-1].get('title') == struct_title:
+            sections[-1]['provisions'].append(prov)
+        else:
+            sections.append({"title": struct_title, "provisions": [prov]})
+        last_provision = sections[-1]['provisions'][-1]
+
+    return JsonResponse({"document_id": document.id, "title": document.title, "sections": sections})
+
+
+@require_GET
+def relationships(request):
+    # Accept either provision_id (pk) or provision_number
+    provision_id = request.GET.get('provision_id') or request.GET.get('id')
+    provision_number = request.GET.get('provision_number') or request.GET.get('number')
+
+    provision = None
+    if provision_id:
+        try:
+            provision = LegalProvision.objects.select_related('element__document').get(pk=int(provision_id))
+        except Exception:
+            provision = None
+
+    if provision is None and provision_number:
+        try:
+            provision = LegalProvision.objects.select_related('element__document').filter(number=provision_number).first()
+        except Exception:
+            provision = None
+
+    if provision is None:
+        return JsonResponse({"error": "provision not found"}, status=404)
+
+    out_rels = []
+    for rel in provision.outgoing_relationships.select_related('target').all():
+        contexts = [
+            {
+                "source_text": c.source_text,
+                "target_text": c.target_text,
+                "old_text": c.old_text,
+                "new_text": c.new_text,
+            }
+            for c in rel.contexts.all()
+        ]
+        out_rels.append({
+            "id": rel.id,
+            "relationship_type": rel.relationship_type,
+            "confidence": rel.confidence,
+            "target": {
+                "id": rel.target.id,
+                "number": rel.target.number,
+                "title": rel.target.title,
+            },
+            "contexts": contexts,
+        })
+
+    in_rels = []
+    for rel in provision.incoming_relationships.select_related('source').all():
+        contexts = [
+            {
+                "source_text": c.source_text,
+                "target_text": c.target_text,
+                "old_text": c.old_text,
+                "new_text": c.new_text,
+            }
+            for c in rel.contexts.all()
+        ]
+        in_rels.append({
+            "id": rel.id,
+            "relationship_type": rel.relationship_type,
+            "confidence": rel.confidence,
+            "source": {
+                "id": rel.source.id,
+                "number": rel.source.number,
+                "title": rel.source.title,
+            },
+            "contexts": contexts,
+        })
+
+    return JsonResponse({"provision": {"id": provision.id, "number": provision.number, "title": provision.title}, "outgoing": out_rels, "incoming": in_rels})

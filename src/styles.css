@@ -48,3 +48,85 @@ button { cursor: pointer; }
 .chat-view:not(.has-messages) .input-wrap textarea { min-height: 32px; max-height: 80px; }
 .chat-view:not(.has-messages) .question-area small { display: none; }
 
+/* Docs panel and toggle button */
+.docs-toggle-button { position: fixed; right: 0; bottom: 0; width: 96px; height: 50vh; border: 0; background: transparent; display: grid; place-items: center; z-index: 999; }
+.docs-toggle-button .ringbinder { width: 36px; height: 100%; display: block; border-left: 12px solid #d8e0d8; border-radius: 4px; box-shadow: -2px 0 6px rgba(0,0,0,0.06); }
+.docs-toggle-button .docs-toggle-hint { position: absolute; bottom: calc(50vh + 12px); right: 12px; width: 220px; background: rgba(255,255,255,0.95); border-radius: 8px; padding:9px; font-size:13px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); text-align: left }
+.docs-panel { position: fixed; top: 0; left: -100vw; bottom: 0; width: 100vw; background: var(--docs-bg, #fffef9); border-right: 1px solid var(--docs-border, #e0e7df); box-shadow: 12px 0 36px rgba(21,37,27,0.12); z-index: 140; display: flex; flex-direction: row; transition: left .28s cubic-bezier(.2,.9,.3,1), background .25s, color .25s; padding-top: 12px }
+.docs-panel.open { left: 0; }
+.app-shell.panel-open .chat-view { transform: none; transition: none; }
+.app-shell.panel-open .docs-toggle-button { opacity: 0; pointer-events: none; transform: scale(.95); transition: opacity .2s, transform .2s; }
+
+/* Floating theme button at top-right; visible when hovering the app */
+.floating-theme-button { position: fixed; top: 18px; right: 18px; width: 46px; height: 46px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(255,255,255,0.9); box-shadow: 0 6px 18px rgba(0,0,0,0.08); opacity: 0; pointer-events: none; transition: opacity .18s; z-index: 9999 }
+.app-shell:hover .floating-theme-button { opacity: 1; pointer-events: auto }
+.floating-theme-button:hover { transform: scale(1.05) }
+.docs-header { display:flex; align-items:center; gap:10px; padding:18px; border-bottom:1px solid #ecefe8; direction: ltr; position: relative; justify-content: center }
+/* place the close button on top of the title (centered) */
+.docs-header .close-panel { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); background: transparent; border: 1px solid #e6ece4; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px }
+.docs-header .close-panel:hover { background: #f5f7f5 }
+
+/* make the docs panel inherit the main app theme colors */
+.docs-panel { background: inherit; color: inherit }
+.docs-list, .docs-view, .rel-modal-body { background: inherit; color: inherit }
+
+/* search input and buttons should respond to theme changes */
+.search-input { background: var(--input-bg, #fff); color: inherit; border: 1px solid var(--input-border, #dfe7df); transition: background .25s, color .25s, border-color .25s }
+[data-theme='dark'] .search-input { background: #19221d; border-color: #405148; color: #edf2eb }
+
+.close-panel, .docs-pagination button, .rel-button { background: var(--btn-bg, #f2f7f2); color: inherit; border: 1px solid var(--btn-border,#e6ece4); transition: background .25s, color .25s, border-color .25s }
+[data-theme='dark'] .close-panel, [data-theme='dark'] .docs-pagination button, [data-theme='dark'] .rel-button { background: #293b32; border-color:#405148; color:#dfe7df }
+
+.docs-pagination button { padding:6px 10px; border-radius:8px; background: var(--btn-bg, #eef6ee); cursor:pointer; border: 1px solid var(--btn-border,#e6ece4) }
+[data-theme='dark'] .docs-pagination button { background: #22332b }
+.docs-header h3 { margin:0; font-size:16px }
+.docs-header .back-button { display:none }
+/* removed decorative ringbinder separator inside panel header */
+.docs-body { display:flex; flex:1; min-height:0; }
+.docs-list { width: 260px; border-right:1px solid #f0f2ef; padding:12px; display:flex; flex-direction:column; gap:8px; overflow:auto; }
+.docs-list { margin-top: 8px }
+.docs-list-item { padding:12px; border-radius:8px; cursor:pointer; background: transparent; transition: background .2s }
+.docs-list-item:hover { background:#eef5ee }
+.close-top { background: transparent; border: 1px solid #e6ece4; position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px }
+.close-top:hover { background: #f5f7f5 }
+.docs-list-title { font-weight:700; font-size:15px }
+.docs-list-desc { font-size:13px; color:#6f7c73 }
+.search-top { position: sticky; top: 0; background: linear-gradient(#fffef9, #fffef9); padding-bottom:8px; z-index: 6; position: relative; }
+.search-input { width:100%; padding:10px; border-radius:10px; border:1px solid #dfe7df; font-size:14px }
+.docs-loading { padding: 12px; color:#556 }
+.docs-pagination { display:flex; gap:12px; align-items:center; justify-content:center; padding:10px 0; border-top:1px solid #f0f2ef; margin-top:8px }
+.docs-pagination button { padding:6px 10px; border-radius:8px; border:0; background:#eef6ee; cursor:pointer }
+.docs-view { flex:1; padding:24px 26px; overflow:auto; }
+.doc-title { margin:0 0 8px 0 }
+.struct-group { margin-bottom:12px }
+.group-title { margin:0 0 6px 0; font-size:15px; color:#3f4c45 }
+.provision { padding:12px; border-radius:8px; border:1px solid #edf4ea; margin-bottom:10px; background:#fff; transition: background .25s, border-color .25s, color .25s }
+.provision-head { display:flex; justify-content:space-between; align-items:center; gap:10px }
+.provision-number { font-weight:700 }
+.provision-actions { display:flex; gap:6px }
+.rel-button { padding:8px 10px; border-radius:8px; border:0; background:#f2f7f2; cursor:pointer }
+.provision-text { margin-top:8px; white-space:pre-wrap; color:#22332b }
+.relationships { margin-top:8px; padding-top:8px; border-top:1px dashed #eef5ee }
+.relationship-row { font-size:13px; padding:8px 10px; border-radius:6px; background:#fbfdfb }
+
+/* Dark theme adjustments for docs panel and related components */
+[data-theme='dark'] .docs-panel { --docs-bg: #0f1614; --docs-border: #24302b; color: #dfe7df }
+[data-theme='dark'] .docs-list-item { background: transparent }
+[data-theme='dark'] .docs-list-item:hover { background: #1a2a25 }
+[data-theme='dark'] .docs-list { border-right-color: #24302b }
+[data-theme='dark'] .docs-view { background: #0f1614 }
+[data-theme='dark'] .docs-panel { background: #0f1614 }
+[data-theme='dark'] .rel-modal-body { background: #111815; color: #dfe7df }
+[data-theme='dark'] .provision { background: #0d1512; border-color: #17221d }
+[data-theme='dark'] .provision-text { color: #cfe0d4 }
+
+@media (max-width: 780px) { .docs-panel { width: 100vw; } .app-shell.panel-open .chat-view { transform: translateX(-100vw); } }
+
+/* Relationship modal */
+.rel-modal { position: fixed; inset: 0; display: grid; place-items: center; z-index: 9999 }
+.rel-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.45) }
+.rel-modal-body { position: relative; width: min(880px, 92vw); max-height: 82vh; overflow: auto; background: #fff; border-radius: 10px; box-shadow: 0 20px 46px rgba(0,0,0,0.24); }
+.rel-modal-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; border-bottom:1px solid #eee }
+.rel-modal-content { padding:14px 18px; display:flex; flex-direction:column; gap:10px }
+.rel-context { color:#556; font-size:13px; margin-top:6px }
+

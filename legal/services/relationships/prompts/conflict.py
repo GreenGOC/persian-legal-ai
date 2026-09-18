@@ -21,6 +21,15 @@ If you think there is a conflict, extract it.
 Do not require the conflict to be proven with absolute certainty.
 Do not infer a conflict only because two provisions use different words, discuss different subjects, or have different wording without an actual legal incompatibility.
 
+Do not treat the following as a conflict by themselves:
+
+* A later provision changing or correcting the wording or legal effect of an earlier provision.
+* A later provision adding a new rule, exception, condition, or provision to an existing legal text.
+* A later provision replacing an earlier provision or text with a new provision or text.
+* A later amendment, supplementary provision, or replacement that is intended to modify the legal text rather than create incompatible rules that are simultaneously applicable.
+
+In such cases, extract a conflict only if the SOURCE separately establishes that two provisions remain simultaneously applicable and their legal rules are actually incompatible.
+
 Follow this procedure:
 
 1. Find every possible conflict between legal provisions in the SOURCE.

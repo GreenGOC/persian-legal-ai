@@ -1,0 +1,233 @@
+from legal.models import *
+
+# AMEND YYYYYYYYYYYYYYYYYYYY
+
+docs = LegalDocument.objects.filter(
+    title__icontains="قانون اصلاح قانون تدوین و تنقیح قوانین و مقررات کشور"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n") # 18346
+
+docs = LegalDocument.objects.filter(
+    title__icontains="قانون تدوین و تنقیح قوانین و مقررات کشور"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n") # 18591
+
+python manage.py extract_relationships --documents 18346 --relationship MODIFICATION
+
+
+# ADD  YYYYYYYYYYYYYYYYYYYY
+
+titles = [ #2542  # 1015
+    "قانون اصلاح قانون نظام صنفی کشور", 
+    "قانون نظام صنفی کشور",
+]
+docs = LegalDocument.objects.filter(title__icontains=titles)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+python manage.py extract_relationships --documents 2542 --relationship MODIFICATION
+
+
+# REMOVE YYYYYYYYYYYYYYYYYYYY
+
+docs = LegalDocument.objects.filter( # 19189
+    title__icontains="قانون اصلاح موادی از قانون مدنی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter(  # 14583
+    title__icontains="قانون مدنی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+python manage.py extract_relationships --documents 19189 --relationship MODIFICATION
+
+
+# REPLACE YYYYYYYYYYYYYYYYYYYY
+
+docs = LegalDocument.objects.filter( # 15461
+    title__icontains="قانون اصلاح قانون مبارزه با پولشویی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter(  # 19770
+    title__icontains="قانون مبارزه با پولشویی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+python manage.py extract_relationships --documents 15461 --relationship MODIFICATION
+
+# REPEAL  YYYYYYYYYYYYYYYYYYYY
+
+docs = LegalDocument.objects.filter( # 17458  # DONE
+    title__icontains="قانون حمایت"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+python manage.py extract_relationships --documents 17458 17458 --relationship REPEAL
+
+
+docs = LegalDocument.objects.filter( # 17409   # DONE
+    title__icontains="قانون مجازات اسلامی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter( # 11861  
+    title__icontains="قانون کاهش مجازات حبس تعزیری"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+python manage.py extract_relationships --documents 17409 11861 --relationship REPEAL
+
+
+
+
+# CANCEL  YYYYYYYYYYYYYYYYYYYY
+
+docs = LegalDocument.objects.filter(  # 16737
+    title__icontains="قانون نحوه اجرای محکومیت های مالی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 16737 --relationship CANCEL
+-------------------------------------------------------------------------------------------------------------
+
+
+
+
+# REVIVAL  NNNNNNNNNNNNNNNNNNNNN
+
+from your_app.models import LegalDocument
+
+docs = LegalDocument.objects.filter( # 8168
+    title__icontains="قانون ساختمان شاهراه تهران ـ کرج"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter(
+    title__icontains="لایحه قانونی الغاء ماده ۶ قانون ساختمان شاهراه تهران ـ کرج"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter(
+    title__icontains="قانون لغو قانون الغای ماده ۶ قانون ساختمان اتوبان تهران ـ کرج"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+python manage.py extract_relationships --documents <> <> <> --relationship REVIVAL
+
+
+
+# TEMPORAL  NNNNNNNNNNNNNNNNNNNNN
+
+docs = LegalDocument.objects.filter( # 17368
+    title__icontains="قانون تمدید مهلت اجرای آزمایشی قانون ثبت اختراعات"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter( # 19772
+    title__icontains="قانون ثبت اختراعات، طرح‌های صنعتی و علائم تجاری"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 17368 --relationship TEMPORAL
+
+
+
+# CONFLICT
+
+docs = LegalDocument.objects.filter( # 14583
+    title__icontains="قانون مدنی" 
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+python manage.py extract_relationships --documents 14583 14583 --relationship CONFLICT # TAQYID
+
+docs = LegalDocument.objects.filter( # 5919
+    title__icontains="قانون افراز و فروش املاک مشاع"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter( # 12896
+    title__icontains="قانون امور حسبی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 5919 12896 --relationship CONFLICT # TAKHSIS
+
+docs = LegalDocument.objects.filter( # 12980
+    title__icontains="قانون آیین دادرسی مدنی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 12980 12980 --relationship CONFLICT # HOKUMAT
+
+docs = LegalDocument.objects.filter( # 17409
+    title__icontains="قانون مجازات اسلامی مصوب ۱۳۹۲"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter( # 2884
+    title__icontains="قانون آیین دادرسی دادگاه‌های عمومی و انقلاب در امور کیفری"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 17409 2884 --relationship CONFLICT # TAKHSIS
+
+
+
+# TAKHSIS
+
+docs = LegalDocument.objects.filter( # 5919
+    title__icontains="قانون افراز و فروش املاک مشاع"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter( # 12896
+    title__icontains="قانون امور حسبی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 5919 12896 --relationship TAKHSIS
+
+
+# TAQYID
+
+docs = LegalDocument.objects.filter(  # 14583
+    title__icontains="قانون مدنی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 14583 14583 --relationship TAQYID
+
+
+# HOKUMAT
+
+docs = LegalDocument.objects.filter( # 17409
+    title__icontains="قانون مجازات اسلامی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 17409 --relationship HOKUMAT
+
+
+# REFERENCE
+
+docs = LegalDocument.objects.filter( # 15461
+    title__icontains="قانون اصلاح قانون مبارزه با پولشویی مصوب ۱۳۹۷"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter( # 17409
+    title__icontains="قانون مجازات اسلامی"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 15461 --relationship REFERENCE
+
+docs = LegalDocument.objects.filter( # 13899
+    title__icontains="قانون تجارت"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 13899 --relationship REFERENCE
+
+docs = LegalDocument.objects.filter( # 20103
+    title__icontains="قانون حمایت از مصرف کنندگان خودرو"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+
+docs = LegalDocument.objects.filter( # 16460
+    title__icontains="آیین‌نامه اجرایی قانون حمایت از حقوق مصرف‌کنندگان خودرو"
+)
+print(*[(d.id, d.title) for d in docs], sep="\n")
+python manage.py extract_relationships --documents 16460 --relationship REFERENCE
