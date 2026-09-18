@@ -1,6 +1,8 @@
 import json
+import os
 from functools import lru_cache
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -8,6 +10,12 @@ from django.views.decorators.http import require_GET
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from .models import LegalDocument, LegalProvision, LegalVersion, LegalRelationship, RelationshipContext
+
+DEMO_MODE = 1
+
+DEMO_DOC_IDS = {
+    18346,18591,2542,1015,19189,14583,15461,19770,17458,17409,11861,16737,8168,17368,19772,5919,12896,12980,2884,13899,20103,16460
+}
 
 
 @lru_cache(maxsize=1)
@@ -59,7 +67,6 @@ def chat(request):
 
 @require_GET
 def documents_list(request):
-    # Pagination and search
     try:
         page = int(request.GET.get('page', '1'))
         if page < 1:
@@ -74,8 +81,10 @@ def documents_list(request):
 
     q = request.GET.get('q', '') or request.GET.get('query', '')
     qs = LegalDocument.objects.all()
+
+    if DEMO_MODE:
+        qs = qs.filter(id__in=DEMO_DOC_IDS)
     if q:
-        # split by comma or whitespace, chain filters (AND) where each token must appear in title or subject
         import re
         tokens = [t.strip() for t in re.split('[,\s]+', q) if t.strip()]
         for token in tokens:
@@ -154,23 +163,24 @@ def document_provisions(request, doc_id):
             combined = "\n\n".join(texts).strip()
             sentences = _hz_sent_tokenize(combined)
 
+            type_label = "" if p.provision_type == 'other' else {
+                'constitutional_principle': 'اصل',
+                'article': 'ماده',
+                'note': 'تبصره',
+                'clause': 'بند',
+                'subclause': 'تبصره فرعی',
+                'item': 'مورد',
+            }.get(p.provision_type, p.provision_type or "")
+            display_label = f"{type_label} {p.number or ''}".strip()
+            if not display_label:
+                display_label = (p.title or "").strip()
+
             prov_entry = {
                 "id": p.id,
                 "provision_type": p.provision_type,
                 "number": p.number,
-                # display label: type + number
-                # Map internal provision_type to Persian label; do not render 'other'
-                "display_label": (
-                    ("" if p.provision_type == 'other' else (
-                        {
-                            'constitutional_principle': 'اصل',
-                            'article': 'ماده',
-                            'note': 'تبصره',
-                            'clause': 'بند',
-                            'subclause': 'تبصره فرعی',
-                            'item': 'مورد',
-                        }.get(p.provision_type, p.provision_type)
-                    ) + (f" {p.number}" if p.number else "")).strip()),
+                "title": p.title or "",
+                "display_label": display_label,
                 "sentences": sentences,
                 "versions": versions,
             }

@@ -138,7 +138,7 @@ docs = LegalDocument.objects.filter( # 14583
 )
 print(*[(d.id, d.title) for d in docs], sep="\n")
 
-python manage.py extract_relationships --documents 14583 14583 --relationship CONFLICT # TAQYID
+python manage.py extract_relationships --documents 14583 14583 --relationship CONFLICT # TAQYID  
 
 docs = LegalDocument.objects.filter( # 5919
     title__icontains="قانون افراز و فروش املاک مشاع"
@@ -149,13 +149,13 @@ docs = LegalDocument.objects.filter( # 12896
     title__icontains="قانون امور حسبی"
 )
 print(*[(d.id, d.title) for d in docs], sep="\n")
-python manage.py extract_relationships --documents 5919 12896 --relationship CONFLICT # TAKHSIS
+python manage.py extract_relationships --documents 5919 12896 --relationship CONFLICT # TAKHSIS   #DONE
 
 docs = LegalDocument.objects.filter( # 12980
     title__icontains="قانون آیین دادرسی مدنی"
 )
 print(*[(d.id, d.title) for d in docs], sep="\n")
-python manage.py extract_relationships --documents 12980 12980 --relationship CONFLICT # HOKUMAT
+python manage.py extract_relationships --documents 12980 12980 --relationship CONFLICT # HOKUMAT   # TOO BIG
 
 docs = LegalDocument.objects.filter( # 17409
     title__icontains="قانون مجازات اسلامی مصوب ۱۳۹۲"
@@ -166,7 +166,7 @@ docs = LegalDocument.objects.filter( # 2884
     title__icontains="قانون آیین دادرسی دادگاه‌های عمومی و انقلاب در امور کیفری"
 )
 print(*[(d.id, d.title) for d in docs], sep="\n")
-python manage.py extract_relationships --documents 17409 2884 --relationship CONFLICT # TAKHSIS
+python manage.py extract_relationships --documents 17409 2884 --relationship CONFLICT # TAKHSIS   # TOO BIG
 
 
 
@@ -231,3 +231,55 @@ docs = LegalDocument.objects.filter( # 16460
 )
 print(*[(d.id, d.title) for d in docs], sep="\n")
 python manage.py extract_relationships --documents 16460 --relationship REFERENCE
+
+
+
+
+18346
+18591
+2542
+1015
+19189
+14583
+15461
+19770
+17458
+17409
+11861
+16737
+8168
+17368
+19772
+5919
+12896
+12980
+2884
+13899
+20103
+16460
+
+document = LegalDocument.objects.get(id=14583)
+
+elements = LegalElement.objects.filter(
+    document=document
+).select_related(
+    "provision",
+    "structural",
+).order_by("order", "id")
+
+for element in elements:
+    if element.element_type == ElementType.PROVISION:
+        print(
+            "PROVISION:",
+            element.provision.provision_type,
+            element.provision.number,
+			element.provision.title,
+            element.provision.text[:100],
+        )
+    elif element.element_type == ElementType.STRUCTURAL:
+        print(
+            "STRUCTURAL:",
+            element.structural.structural_type,
+            element.structural.number,
+            element.structural.title,
+        )

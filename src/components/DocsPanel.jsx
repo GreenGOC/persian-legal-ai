@@ -120,7 +120,7 @@ function DocView({ doc }) {
                 <article key={item.id} className="provision">
                   <div className="provision-head">
                     <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-                      <div className="provision-number">{item.display_label || item.number}</div>
+                      <div className="provision-number">{item.display_label || item.number || item.title}</div>
                     </div>
                     <div className="provision-actions">
                       <button className="rel-button" onClick={() => openRelationshipsModal(item, 'outgoing')}>روابط (منبع)</button>

@@ -263,9 +263,7 @@ class StructuralElement(models.Model):
 
 
 class LegalProvision(models.Model):
-    element = models.OneToOneField(
-        LegalElement, on_delete=models.CASCADE, related_name="provision"
-    )
+    element = models.OneToOneField(LegalElement, on_delete=models.CASCADE, related_name="provision")
     provision_type = models.CharField(max_length=30, choices=ProvisionType.choices)
     number = models.CharField(max_length=50, blank=True)
     title = models.TextField(blank=True)

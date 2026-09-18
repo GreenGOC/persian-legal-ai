@@ -49,17 +49,16 @@ button { cursor: pointer; }
 .chat-view:not(.has-messages) .question-area small { display: none; }
 
 /* Docs panel and toggle button */
-.docs-toggle-button { position: fixed; right: 0; bottom: 0; width: 96px; height: 50vh; border: 0; background: transparent; display: grid; place-items: center; z-index: 999; }
-.docs-toggle-button .ringbinder { width: 36px; height: 100%; display: block; border-left: 12px solid #d8e0d8; border-radius: 4px; box-shadow: -2px 0 6px rgba(0,0,0,0.06); }
-.docs-toggle-button .docs-toggle-hint { position: absolute; bottom: calc(50vh + 12px); right: 12px; width: 220px; background: rgba(255,255,255,0.95); border-radius: 8px; padding:9px; font-size:13px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); text-align: left }
+.docs-toggle-button { position: fixed; left: 0; bottom: 0; width: 96px; height: 50vh; border: 0; background: transparent; display: grid; place-items: center; z-index: 999; }
+.docs-toggle-button .ringbinder { width: 36px; height: 100%; display: block; border-right: 12px solid #d8e0d8; border-radius: 4px; box-shadow: 2px 0 6px rgba(0,0,0,0.06); }
+.docs-toggle-button .docs-toggle-hint { position: absolute; bottom: calc(50vh + 12px); left: 12px; width: 220px; background: rgba(255,255,255,0.95); border-radius: 8px; padding:9px; font-size:13px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); text-align: right }
 .docs-panel { position: fixed; top: 0; left: -100vw; bottom: 0; width: 100vw; background: var(--docs-bg, #fffef9); border-right: 1px solid var(--docs-border, #e0e7df); box-shadow: 12px 0 36px rgba(21,37,27,0.12); z-index: 140; display: flex; flex-direction: row; transition: left .28s cubic-bezier(.2,.9,.3,1), background .25s, color .25s; padding-top: 12px }
 .docs-panel.open { left: 0; }
 .app-shell.panel-open .chat-view { transform: none; transition: none; }
 .app-shell.panel-open .docs-toggle-button { opacity: 0; pointer-events: none; transform: scale(.95); transition: opacity .2s, transform .2s; }
 
-/* Floating theme button at top-right; visible when hovering the app */
-.floating-theme-button { position: fixed; top: 18px; right: 18px; width: 46px; height: 46px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(255,255,255,0.9); box-shadow: 0 6px 18px rgba(0,0,0,0.08); opacity: 0; pointer-events: none; transition: opacity .18s; z-index: 9999 }
-.app-shell:hover .floating-theme-button { opacity: 1; pointer-events: auto }
+/* Floating theme button at bottom-right */
+.floating-theme-button { position: fixed; bottom: 18px; right: 18px; width: 46px; height: 46px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(255,255,255,0.9); box-shadow: 0 6px 18px rgba(0,0,0,0.08); opacity: 1; pointer-events: auto; transition: transform .12s, opacity .18s; z-index: 9999 }
 .floating-theme-button:hover { transform: scale(1.05) }
 .docs-header { display:flex; align-items:center; gap:10px; padding:18px; border-bottom:1px solid #ecefe8; direction: ltr; position: relative; justify-content: center }
 /* place the close button on top of the title (centered) */
@@ -79,6 +78,10 @@ button { cursor: pointer; }
 
 .docs-pagination button { padding:6px 10px; border-radius:8px; background: var(--btn-bg, #eef6ee); cursor:pointer; border: 1px solid var(--btn-border,#e6ece4) }
 [data-theme='dark'] .docs-pagination button { background: #22332b }
+
+/* page jump input follows theme */
+.page-jump { width: 80px; padding: 6px; border-radius: 8px; border: 1px solid var(--input-border, #e6ece4); background: var(--input-bg, #fff); color: inherit; transition: background .25s, color .25s, border-color .25s }
+[data-theme='dark'] .page-jump { background: #19221d; border-color: #405148; color: #edf2eb }
 .docs-header h3 { margin:0; font-size:16px }
 .docs-header .back-button { display:none }
 /* removed decorative ringbinder separator inside panel header */
