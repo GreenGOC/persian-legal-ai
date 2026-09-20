@@ -25,7 +25,7 @@ MAX_RELATIONSHIPS = 30
 GROUP_CONFIG = {
     "MODIFICATION": {"prompt": MODIFICATION_SYSTEM_PROMPT, "documents": 1},
     "REPEAL": {"prompt": REPEAL_SYSTEM_PROMPT, "documents": 2},
-    "CANCEL_ANNULMENT": {"prompt": CANCEL_ANNULMENT_SYSTEM_PROMPT, "documents": 1},
+    "CANCEL": {"prompt": CANCEL_ANNULMENT_SYSTEM_PROMPT, "documents": 1},
     "TEMPORAL": {"prompt": TEMPORAL_SYSTEM_PROMPT, "documents": 1},
     "CONFLICT": {"prompt": CONFLICT_SYSTEM_PROMPT, "documents": 2},
     "TAKHSIS": {"prompt": TAKHSIS_SYSTEM_PROMPT, "documents": 2},
@@ -37,6 +37,7 @@ GROUP_CONFIG = {
     "IMPLEMENTS": {"prompt": IMPLEMENTATION_SYSTEM_PROMPT, "documents": 1},
     "REVIVAL": {"prompt": REVIVAL_SYSTEM_PROMPT, "documents": 3},
 }
+
 
 
 class LegalRelationshipExtractor:
@@ -246,7 +247,10 @@ class LegalRelationshipExtractor:
 
     def build_multi_document_windows(self, document_groups):
         for selected in product(*document_groups):
-            text = "\n\n".join(g["text"] for g in selected)
+            parts = []
+            for index, group in enumerate(selected, 1):
+                parts.append(f"=== TEXT {index} ===\n{group['text']}")
+            text = "\n\n".join(parts)
             yield {
                 "groups": selected,
                 "text": text,
@@ -322,32 +326,10 @@ class LegalRelationshipExtractor:
             relationship_count += extracted_count
             print(f"[RESULT] {group_name}: {extracted_count} relationship(s) (total: {relationship_count})", flush=True)
             results.append({
-                "documents": [
-                    {
-                        "document_id": d.id,
-                        "document_title": d.title,
-                    } for d in documents
-                ],
-
-                "groups": [
-                    {
-                        "index": g["index"],
-                        "provision_count": g["provision_count"],
-                        "token_count": g["token_count"],
-                        "articles": [
-                            u["article_number"]
-                            for u in g["units"]
-                        ],
-                    } for g in window["groups"]
-                ],
-
-                "input_token_count": window["token_count"],
-                "input_text": window["text"],
+                "token_count": window["token_count"],
                 "output": output,
                 "extracted_relationship_count": extracted_count,
             })
-
-
             if output_dir:
                 self.save_progress(group_name, documents, results, output_dir)
         print(f"[DONE] {group_name}: {len(results)} window(s), {relationship_count} relationship(s)", flush=True)
@@ -386,16 +368,8 @@ class LegalRelationshipExtractor:
 
         self.save_json({
             "group_name": group_name,
-            "documents": [
-                {
-                    "document_id": d.id,
-                    "document_title": d.title,
-                }
-                for d in documents
-            ],
             "results": results,
         }, path)
-
         return path
     
     
@@ -408,13 +382,6 @@ class LegalRelationshipExtractor:
 
         self.save_json({
             "group_name": group_name,
-            "documents": [
-                {
-                    "document_id": d.id,
-                    "document_title": d.title,
-                }
-                for d in documents
-            ],
             "results": results,
             "status": "in_progress",
         }, path)

@@ -199,7 +199,7 @@ docs = LegalDocument.objects.filter( # 17409
     title__icontains="قانون مجازات اسلامی"
 )
 print(*[(d.id, d.title) for d in docs], sep="\n")
-python manage.py extract_relationships --documents 17409 --relationship HOKUMAT
+python manage.py extract_relationships --documents 14583 14583 --relationship HOKUMAT
 
 
 # REFERENCE
@@ -283,3 +283,14 @@ for element in elements:
             element.structural.number,
             element.structural.title,
         )
+		
+		
+		
+RelationshipContext.objects.create(
+    relationship=relationship,
+    old_text=target_ps.text,
+    new_text="""متن جدید ماده 27 ...""",
+    evidence="ماده (27) این قانون به شرح ذیل اصلاح",
+    source_text=source_ps.text,
+    target_text=target_ps.text,
+)

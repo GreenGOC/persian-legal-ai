@@ -17,6 +17,30 @@ DEMO_DOC_IDS = {
     18346,18591,2542,1015,19189,14583,15461,19770,17458,17409,11861,16737,8168,17368,19772,5919,12896,12980,2884,13899,20103,16460
 }
 
+RELATIONSHIP_TYPE_LABELS_FA = {
+    "amends": "اصلاحیه",
+    "modifies": "تغییر",
+    "adds": "الحاق",
+    "removes": "حذف",
+    "replaces": "جایگزینی",
+    "repeals": "نسخ",
+    "cancels": "لغو",
+    "annuls": "ابطال",
+    "suspends": "تعلیق",
+    "revives": "احیا",
+    "extends": "تمدید",
+    "expires": "انقضا",
+    "conflicts": "تعارض",
+    "takhsis": "تخصیص",
+    "taqyid": "تقید",
+    "takhassos": "تخصص",
+    "hokumat": "حکومت",
+    "references": "ارجاع",
+    "elaborates": "تبیین",
+    "implements": "اجرا",
+    "identical": "یکسان",
+}
+
 
 @lru_cache(maxsize=1)
 def get_rag_engine():
@@ -125,9 +149,8 @@ def document_provisions(request, doc_id):
     # Return provisions for a given document id
     document = get_object_or_404(LegalDocument, pk=doc_id)
     elements = document.elements.select_related('provision', 'structural').order_by('order', 'id')
-    # We'll produce sections containing only provisions. Structural titles like
-    # 'متفرقه' or 'introduction' will not be rendered as their own section;
-    # instead their provisions will be attached to the closest previous provision.
+    # We'll produce sections containing all provisions in document order,
+    # including provisions under miscellaneous and note sections.
     # Sentences are tokenized using hazm when available.
     try:
         from hazm import sent_tokenize as _hz_sent_tokenize
@@ -140,9 +163,9 @@ def document_provisions(request, doc_id):
             parts = re.split(r'(?<=[\.!؟!?])\s+', text.strip())
             return [p.strip() for p in parts if p.strip()]
 
-    # Collect provisions in document order along with their enclosing structural title
-    provisions_seq = []
+    # Collect every provision in document order, regardless of its parent.
     current_struct = ''
+    provisions = []
     for el in elements:
         if el.element_type == 'structural' and hasattr(el, 'structural'):
             current_struct = el.structural.title or ''
@@ -150,7 +173,6 @@ def document_provisions(request, doc_id):
 
         if el.element_type == 'provision' and hasattr(el, 'provision'):
             p = el.provision
-            # collect version extras
             versions = []
             texts = []
             if p.text:
@@ -172,51 +194,39 @@ def document_provisions(request, doc_id):
                 'item': 'مورد',
             }.get(p.provision_type, p.provision_type or "")
             display_label = f"{type_label} {p.number or ''}".strip()
-            if not display_label:
+            if not display_label or display_label in {"متفرقه", "مقدمه"}:
                 display_label = (p.title or "").strip()
+            if display_label in {"متفرقه", "مقدمه"}:
+                display_label = p.number or ""
+
+            title = (p.title or "").strip()
+            if title in {"متفرقه", "مقدمه", "introduction"}:
+                title = ""
 
             prov_entry = {
                 "id": p.id,
                 "provision_type": p.provision_type,
                 "number": p.number,
-                "title": p.title or "",
+                "title": title,
                 "display_label": display_label,
                 "sentences": sentences,
                 "versions": versions,
+                "children": [],
             }
-            provisions_seq.append({"structural": current_struct or '', "provision": prov_entry})
+            provisions.append({"structural": current_struct or '', "provision": prov_entry})
 
-    # Build sections; skip structural titles that are considered 'misc' and attach
-    # their provisions to the previous provision.
-    skip_titles = {"متفرقه", "introduction", "مقدمه"}
+    # Build sections without collapsing any provision into another one.
     sections = []
-    last_provision = None
-    for item in provisions_seq:
+    for item in provisions:
         struct_title = (item.get('structural') or '').strip()
+        if struct_title.lower() in {"متفرقه", "مقدمه", "introduction"}:
+            struct_title = ""
         prov = item['provision']
-        struct_norm = struct_title.strip().lower()
-        if struct_norm in {s.lower() for s in skip_titles}:
-            # Attach to previous provision if present
-            if last_provision is not None:
-                last_provision['sentences'].extend(prov.get('sentences', []))
-                # also append versions if any
-                last_provision.setdefault('versions', []).extend(prov.get('versions', []))
-            else:
-                # no previous provision; create/append to a generic unnamed section
-                if not sections:
-                    sections.append({"title": "", "provisions": [prov]})
-                    last_provision = sections[-1]['provisions'][-1]
-                else:
-                    sections[-1]['provisions'].append(prov)
-                    last_provision = sections[-1]['provisions'][-1]
-            continue
 
-        # normal structural: create or append to a section with only the structural title
         if sections and sections[-1].get('title') == struct_title:
             sections[-1]['provisions'].append(prov)
         else:
             sections.append({"title": struct_title, "provisions": [prov]})
-        last_provision = sections[-1]['provisions'][-1]
 
     return JsonResponse({"document_id": document.id, "title": document.title, "sections": sections})
 
@@ -244,11 +254,11 @@ def relationships(request):
         return JsonResponse({"error": "provision not found"}, status=404)
 
     out_rels = []
-    for rel in provision.outgoing_relationships.select_related('target').all():
+    for rel in provision.outgoing_relationships.select_related('target__element__document').all():
         contexts = [
             {
-                "source_text": c.source_text,
-                "target_text": c.target_text,
+                "source_text": c.relationship.source.text,
+                "target_text": c.relationship.target.text,
                 "old_text": c.old_text,
                 "new_text": c.new_text,
             }
@@ -257,21 +267,23 @@ def relationships(request):
         out_rels.append({
             "id": rel.id,
             "relationship_type": rel.relationship_type,
+            "relationship_type_fa": RELATIONSHIP_TYPE_LABELS_FA.get(rel.relationship_type, rel.relationship_type),
             "confidence": rel.confidence,
             "target": {
                 "id": rel.target.id,
                 "number": rel.target.number,
                 "title": rel.target.title,
+                "document_title": rel.target.element.document.title,
             },
             "contexts": contexts,
         })
 
     in_rels = []
-    for rel in provision.incoming_relationships.select_related('source').all():
+    for rel in provision.incoming_relationships.select_related('source__element__document').all():
         contexts = [
             {
-                "source_text": c.source_text,
-                "target_text": c.target_text,
+                "source_text": c.relationship.source.text,
+                "target_text": c.relationship.target.text,
                 "old_text": c.old_text,
                 "new_text": c.new_text,
             }
@@ -280,11 +292,13 @@ def relationships(request):
         in_rels.append({
             "id": rel.id,
             "relationship_type": rel.relationship_type,
+            "relationship_type_fa": RELATIONSHIP_TYPE_LABELS_FA.get(rel.relationship_type, rel.relationship_type),
             "confidence": rel.confidence,
             "source": {
                 "id": rel.source.id,
                 "number": rel.source.number,
                 "title": rel.source.title,
+                "document_title": rel.source.element.document.title,
             },
             "contexts": contexts,
         })

@@ -31,8 +31,8 @@ export default function App() {
   const [question, setQuestion] = useState('')
   const [historyOpen, setHistoryOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [isSending, setIsSending] = useState(false)
   const [docsOpen, setDocsOpen] = useState(false)
+  const [isSending, setIsSending] = useState(false)
   const inputRef = useRef(null)
   const messagesRef = useRef(null)
   const activeConversation = conversations.find((item) => item.id === activeId) || conversations[0]
@@ -44,6 +44,20 @@ export default function App() {
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations)), [conversations])
 
   const updateConversation = (id, update) => setConversations((items) => items.map((item) => item.id === id ? update(item) : item))
+  const deleteConversation = (id) => {
+    setConversations((items) => {
+      const remaining = items.filter((item) => item.id !== id)
+      if (remaining.length === 0) {
+        const replacement = newConversation()
+        setActiveId(replacement.id)
+        return [replacement]
+      }
+      if (activeId === id) {
+        setActiveId(remaining[0].id)
+      }
+      return remaining
+    })
+  }
   const startConversation = () => {
     const conversation = newConversation()
     setConversations((items) => [conversation, ...items])
@@ -84,44 +98,25 @@ export default function App() {
     }, 0)
   }, [activeConversation?.messages.length, isSending, activeId])
 
-  const deleteConversation = (id) => {
-    const ok = window.confirm('آیا مطمئن هستید که می‌خواهید این گفتگو را حذف کنید؟')
-    if (!ok) return
-    setConversations((items) => {
-      const next = items.filter((c) => c.id !== id)
-      if (next.length === 0) {
-        const created = [newConversation()]
-        setActiveId(created[0].id)
-        return created
-      }
-      if (id === activeId) {
-        setActiveId(next[0].id)
-      }
-      return next
-    })
-  }
-
-  return <main className={docsOpen ? 'app-shell panel-open' : 'app-shell'} dir="rtl">
+  return <main className="app-shell" dir="rtl">
     <header className="topbar">
       <button className="icon-button menu-button" onClick={() => setHistoryOpen(true)} aria-label="تاریخچه گفتگوها"><Icon name="menu" /></button>
-      <div className="topbar-actions">
-        {/* theme toggle moved to floating hover button */}
-      </div>
     </header>
 
-    {historyOpen && <aside className="history-panel"><div className="history-heading"><h2>گفت‌وگوها</h2><button className="icon-button" onClick={() => setHistoryOpen(false)} aria-label="بستن"><Icon name="close" /></button></div><button className="new-chat" onClick={startConversation}><Icon name="plus" size={18} /> گفت‌وگوی جدید</button><div className="conversation-list">{conversations.map((conversation) => <div key={conversation.id} className={conversation.id === activeId ? 'conversation-row active' : 'conversation-row'}><button onClick={() => { setActiveId(conversation.id); setHistoryOpen(false) }} className={conversation.id === activeId ? 'conversation active' : 'conversation'}>{conversation.title}</button><button className="icon-button small delete-button" title="حذف گفتگو" onClick={(e) => { e.stopPropagation(); deleteConversation(conversation.id) }} aria-label="حذف"><Icon name="close" size={16} /></button></div>)}</div></aside>}
+    {!docsOpen && <button className="docs-toggle" onClick={() => setDocsOpen(true)} aria-label="نمایش اسناد و مفاد حقوقی" />}
+
+    <button className="theme-button theme-floating-button" onClick={() => setTheme((value) => value === 'light' ? 'dark' : 'light')} aria-label="تغییر رنگ‌بندی">
+      {theme === 'light' ? <Icon name="moon" size={21} /> : <Icon name="sun" size={21} />}
+    </button>
+
+    {historyOpen && <aside className="history-panel"><div className="history-heading"><h2>گفت‌وگوها</h2><button className="icon-button" onClick={() => setHistoryOpen(false)} aria-label="بستن"><Icon name="close" /></button></div><button className="new-chat" onClick={startConversation}><Icon name="plus" size={18} /> گفت‌وگوی جدید</button><div className="conversation-list">{conversations.map((conversation) => <div key={conversation.id} className="conversation-row"><button onClick={() => { setActiveId(conversation.id); setHistoryOpen(false) }} className={conversation.id === activeId ? 'conversation active' : 'conversation'}>{conversation.title}</button><button className="conversation-delete" onClick={(event) => { event.stopPropagation(); deleteConversation(conversation.id) }} aria-label="حذف گفت‌و‌گو">حذف</button></div>)}</div></aside>}
+
+    <DocsPanel open={docsOpen} onClose={() => setDocsOpen(false)} />
 
     <section className={activeConversation.messages.length ? 'chat-view has-messages' : 'chat-view'}>
       {activeConversation.messages.length > 0 && <div className="messages" ref={messagesRef}>{activeConversation.messages.map((message) => <article className={`message ${message.role}${message.error ? ' error' : ''}`} key={message.id}><p>{message.text}</p>{message.citations?.length > 0 && <div className="citations">{message.citations.map((citation, index) => <span key={`${citation.provision_id}-${index}`}>{citation.document_title}{citation.provision_number ? `، ${citation.provision_number}` : ''}</span>)}</div>}</article>)}{isSending && <div className="typing" aria-label="در حال دریافت پاسخ"><i /><i /><i /></div>}</div>}
       <form className="question-area" onSubmit={submit}><h1>سوال قانونی دارید؟</h1><div className="input-wrap"><textarea ref={inputRef} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="اینجا بنویسید" rows="1" aria-label="سوال قانونی شما" onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit() } }} /><button type="submit" disabled={!question.trim() || isSending} aria-label="ارسال سوال"><Icon name="send" size={21} /></button></div>{activeConversation.messages.length > 0 && <small>برای ارسال، Enter را بزنید</small>}</form>
     </section>
 
-
-    <button className="docs-toggle-button" aria-label="نمایش اسناد قانونی" title="اسناد" onClick={() => setDocsOpen(true)}>
-      <span className="ringbinder" />
-    </button>
-    <DocsPanel open={docsOpen} onClose={() => setDocsOpen(false)} />
-
-    <button className="floating-theme-button" aria-label="تغییر رنگ‌بندی" onClick={() => setTheme((value) => value === 'light' ? 'dark' : 'light')}>{theme === 'light' ? '🌙' : '☀️'}</button>
   </main>
 }

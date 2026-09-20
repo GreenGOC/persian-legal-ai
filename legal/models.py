@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Source(models.TextChoices):
     NEZAMAT = "nezamat", "Nezamat"
     RRK = "rrk", "RRK"
@@ -128,19 +127,12 @@ class LegalEntity(models.Model):
 
 
 class SourceDocument(models.Model):
-    source = models.CharField(
-        max_length=50, choices=Source.choices, default=Source.NEZAMAT, db_index=True
-    )
+    source = models.CharField(max_length=50, choices=Source.choices, default=Source.NEZAMAT, db_index=True)
     source_id = models.CharField(max_length=255, blank=True, null=True)
     url = models.URLField(max_length=2000)
     title = models.TextField()
     json_path = models.TextField(blank=True)
-    processing_status = models.CharField(
-        max_length=30,
-        choices=ProcessingStatus.choices,
-        default=ProcessingStatus.PENDING,
-        db_index=True,
-    )
+    processing_status = models.CharField(max_length=30, choices=ProcessingStatus.choices, default=ProcessingStatus.PENDING, db_index=True)
 
     class Meta:
         constraints = [
@@ -169,23 +161,14 @@ class LegalDocument(models.Model):
         related_name="documents",
     )
     title = models.TextField()
-    hierarchy_level = models.CharField(
-        max_length=32, choices=HierarchyLevel.choices, null=True, blank=True
-    )
-    document_type = models.CharField(
-        max_length=50, choices=DocumentType.choices, blank=True
-    )
+    hierarchy_level = models.CharField(max_length=32, choices=HierarchyLevel.choices, null=True, blank=True)
+    document_type = models.CharField(max_length=50, choices=DocumentType.choices, blank=True)
     issuing_authority = models.CharField(max_length=500, blank=True)
     approval_date = models.CharField(max_length=20, blank=True)
     publication_date = models.CharField(max_length=20, blank=True)
     effective_date = models.CharField(max_length=20, blank=True)
     subject = models.TextField(blank=True)
-    status = models.CharField(
-        max_length=50,
-        choices=DocumentStatus.choices,
-        default=DocumentStatus.UNKNOWN,
-        db_index=True,
-    )
+    status = models.CharField(max_length=50, choices=DocumentStatus.choices, default=DocumentStatus.UNKNOWN, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -198,41 +181,9 @@ class LegalDocument(models.Model):
         return self.title
 
 
-class DocumentSource(models.Model):
-    """
-    Connects one canonical LegalDocument to one or more
-    source-specific SourceDocuments.
-    """
-
-    document = models.ForeignKey(
-        LegalDocument, on_delete=models.CASCADE, related_name="sources"
-    )
-    source_document = models.ForeignKey(
-        SourceDocument, on_delete=models.CASCADE, related_name="legal_documents"
-    )
-    is_primary = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["document", "source_document"],
-                name="unique_document_source",
-            ),
-        ]
-
-        indexes = [
-            models.Index(fields=["document", "is_primary"]),
-        ]
-
-
 class LegalElement(models.Model):
-    document = models.ForeignKey(
-        LegalDocument, on_delete=models.CASCADE, related_name="elements"
-    )
-    parent = models.ForeignKey(
-        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
-    )
+    document = models.ForeignKey(LegalDocument, on_delete=models.CASCADE, related_name="elements")
+    parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="children")
     element_type = models.CharField(max_length=30, choices=ElementType.choices)
     order = models.PositiveIntegerField()
 
@@ -251,9 +202,7 @@ class LegalElement(models.Model):
 
 
 class StructuralElement(models.Model):
-    element = models.OneToOneField(
-        LegalElement, on_delete=models.CASCADE, related_name="structural"
-    )
+    element = models.OneToOneField(LegalElement, on_delete=models.CASCADE, related_name="structural")
     structural_type = models.CharField(max_length=30, choices=StructuralType.choices)
     title = models.TextField(blank=True)
     number = models.CharField(max_length=50, blank=True)
@@ -279,9 +228,7 @@ class LegalProvision(models.Model):
 
 
 class LegalVersion(models.Model):
-    provision = models.ForeignKey(
-        LegalProvision, on_delete=models.CASCADE, related_name="versions"
-    )
+    provision = models.ForeignKey(LegalProvision, on_delete=models.CASCADE, related_name="versions")
     text = models.TextField()
     version_date = models.CharField(max_length=20, blank=True)
     status = models.CharField(max_length=50, choices=VersionStatus.choices, blank=True)
@@ -294,15 +241,9 @@ class LegalVersion(models.Model):
 
 
 class LegalRelationship(models.Model):
-    source = models.ForeignKey(
-        LegalProvision, on_delete=models.CASCADE, related_name="outgoing_relationships"
-    )
-    target = models.ForeignKey(
-        LegalProvision, on_delete=models.CASCADE, related_name="incoming_relationships"
-    )
-    relationship_type = models.CharField(
-        max_length=50, choices=RelationshipType.choices
-    )
+    source = models.ForeignKey(LegalProvision, on_delete=models.CASCADE, related_name="outgoing_relationships")
+    target = models.ForeignKey(LegalProvision, on_delete=models.CASCADE, related_name="incoming_relationships")
+    relationship_type = models.CharField(max_length=50, choices=RelationshipType.choices)
     confidence = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -321,12 +262,8 @@ class LegalRelationship(models.Model):
 
 class RelationshipContext(models.Model):
     relationship = models.ForeignKey(LegalRelationship, on_delete=models.CASCADE, related_name="contexts")
-    source_text = models.TextField(blank=True)
-    target_text = models.TextField(blank=True)
     old_text = models.TextField(blank=True)
     new_text = models.TextField(blank=True)
-    source_date = models.CharField(max_length=20, blank=True)
-    target_date = models.CharField(max_length=20, blank=True)
     effective_date = models.CharField(max_length=20, blank=True)
     reference_docs = models.JSONField(default=list, blank=True)
     reference_provisions = models.JSONField(default=list, blank=True)

@@ -8,10 +8,25 @@ export default function DocsPanel({ open, onClose }) {
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [loadingDocs, setLoadingDocs] = useState(false)
+  const [loadingDocId, setLoadingDocId] = useState(null)
+  const [isClosing, setIsClosing] = useState(false)
 
   useEffect(() => {
-    if (!open) { setSelectedDoc(null); setQuery('') }
+    if (open) {
+      setIsClosing(false)
+    }
   }, [open])
+
+  const handleClose = () => {
+    if (isClosing) return
+    setIsClosing(true)
+    window.setTimeout(() => {
+      setSelectedDoc(null)
+      setQuery('')
+      setIsClosing(false)
+      onClose?.()
+    }, 150)
+  }
 
   useEffect(() => {
     async function load() {
@@ -30,12 +45,13 @@ export default function DocsPanel({ open, onClose }) {
     if (open) load()
   }, [open, page, query, perPage])
 
+  const panelClass = open ? 'docs-panel open' : isClosing ? 'docs-panel closing' : 'docs-panel hidden'
+
   return (
-    <aside className={open ? 'docs-panel open' : 'docs-panel'} aria-hidden={!open}>
+    <aside className={panelClass} aria-hidden={!open && !isClosing}>
       <div className="docs-header">
-        <button className="icon-button small back-button" onClick={onClose} aria-label="بازگشت">⇦</button>
         <h3>اسناد قانونی</h3>
-        <button className="close-panel" onClick={onClose} aria-label="بستن پنل">✕</button>
+        <button className="close-panel" onClick={handleClose} aria-label="بستن پنل">✕</button>
       </div>
       <div className="docs-body">
         <div className="docs-list">
@@ -51,13 +67,16 @@ export default function DocsPanel({ open, onClose }) {
           </div>
           {!loadingDocs && documents.length === 0 && <div className="empty">موردی یافت نشد</div>}
           {!loadingDocs && documents.map((doc) => (
-            <div key={doc.id} className="docs-list-item" onClick={async () => {
+            <div key={doc.id} className={`docs-list-item${loadingDocId === doc.id ? ' loading' : ''}`} onClick={async () => {
               try {
+                setLoadingDocId(doc.id)
+                setSelectedDoc(null)
                 const res = await fetch(`/api/documents/${doc.id}/provisions/`)
                 if (!res.ok) throw new Error('failed')
                 const payload = await res.json()
                 setSelectedDoc(payload)
               } catch (e) { console.error(e) }
+              finally { setLoadingDocId((current) => current === doc.id ? null : current) }
             }}>
               <div className="docs-list-title">{doc.title}</div>
               <div className="docs-list-desc">{doc.description}</div>
@@ -71,7 +90,7 @@ export default function DocsPanel({ open, onClose }) {
           </div>
         </div>
         <div className="docs-view">
-          {selectedDoc ? <DocView doc={selectedDoc} onClose={() => setSelectedDoc(null)} /> : <div className="placeholder">یکی از اسناد را انتخاب کنید</div>}
+          {loadingDocId ? <div className="placeholder loading">در حال بارگذاری...</div> : selectedDoc ? <DocView doc={selectedDoc} onClose={() => setSelectedDoc(null)} /> : <div className="placeholder">یکی از اسناد را انتخاب کنید</div>}
         </div>
       </div>
     </aside>
@@ -81,7 +100,7 @@ export default function DocsPanel({ open, onClose }) {
 function DocView({ doc }) {
   const [relationshipsCache, setRelationshipsCache] = useState({})
   const [visibleRels, setVisibleRels] = useState({})
-
+  console.log("DOC:", doc)
   async function fetchRelationships(provisionId) {
     try {
       const res = await fetch(`/api/relationships/?provision_id=${encodeURIComponent(provisionId)}`)
@@ -108,6 +127,30 @@ function DocView({ doc }) {
 
   function closeRelModal() { setRelModal({ open: false, provision: null, kind: null, data: null }) }
 
+  function renderProvision(item) {
+    return (
+        <article key={item.id} className="provision">
+          <div className="provision-head">
+            {item.title ? (
+              <div className="provision-title">
+                {item.title}
+              </div>
+            ) : null}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className="provision-number">{item.display_label || item.number || item.title}</div>
+            </div>
+            <div className="provision-actions">
+              <button className="rel-button" onClick={() => openRelationshipsModal(item, 'outgoing')}>روابط (اثرگذار)</button>
+              <button className="rel-button" onClick={() => openRelationshipsModal(item, 'incoming')}>روابط (اثرپذیر)</button>
+            </div>
+          </div>
+          <div className="provision-text">
+            {Array.isArray(item.sentences) ? item.sentences.map((s, i) => <p key={i}>{s}</p>) : (item.sentences || '').split('\n\n').map((s, i) => <p key={i}>{s}</p>)}
+          </div>
+        </article>
+    )
+  }
+
   return (
     <div className="doc-view-root">
       <h2 className="doc-title">{doc.title}</h2>
@@ -116,22 +159,9 @@ function DocView({ doc }) {
           <section key={sidx} className="struct-group">
             {section.title ? <h3 className="group-title">{section.title}</h3> : null}
             <div className="group-items">
-              {section.provisions.map((item) => (
-                <article key={item.id} className="provision">
-                  <div className="provision-head">
-                    <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
-                      <div className="provision-number">{item.display_label || item.number || item.title}</div>
-                    </div>
-                    <div className="provision-actions">
-                      <button className="rel-button" onClick={() => openRelationshipsModal(item, 'outgoing')}>روابط (منبع)</button>
-                      <button className="rel-button" onClick={() => openRelationshipsModal(item, 'incoming')}>روابط (مقصد)</button>
-                    </div>
-                  </div>
-                  <div className="provision-text">
-                    {Array.isArray(item.sentences) ? item.sentences.map((s, i) => <p key={i}>{s}</p>) : (item.sentences || '').split('\n\n').map((s, i) => <p key={i}>{s}</p>)}
-                  </div>
-                </article>
-              ))}
+              {(section.provisions || section.items || []).map((item) =>
+                renderProvision(item)
+              )}
             </div>
           </section>
         ))}
@@ -142,17 +172,17 @@ function DocView({ doc }) {
           <div className="rel-modal-backdrop" onClick={closeRelModal} />
           <div className="rel-modal-body">
             <div className="rel-modal-header">
-              <h3>روابط — {relModal.kind === 'outgoing' ? 'منبع' : 'مقصد'}</h3>
+              <h3>روابط — {relModal.kind === 'outgoing' ? 'اثرگذار' : 'اثرپذیر'}</h3>
               <button className="icon-button" onClick={closeRelModal}>×</button>
             </div>
             <div className="rel-modal-content">
-              {relModal.data && relModal.data.outgoing && relModal.kind === 'outgoing' && relModal.data.outgoing.length === 0 && <div>روابتی یافت نشد</div>}
-              {relModal.data && relModal.data.incoming && relModal.kind === 'incoming' && relModal.data.incoming.length === 0 && <div>روابتی یافت نشد</div>}
+              {relModal.data && relModal.data.outgoing && relModal.kind === 'outgoing' && relModal.data.outgoing.length === 0 && <div>رابطه ای یافت نشد</div>}
+              {relModal.data && relModal.data.incoming && relModal.kind === 'incoming' && relModal.data.incoming.length === 0 && <div>رابطه ای یافت نشد</div>}
               {relModal.data && relModal.kind === 'outgoing' && relModal.data.outgoing.map(r => (
-                <div key={r.id} className="relationship-row">{r.relationship_type} → {r.target?.number || r.target?.id} <div className="rel-context">{(r.contexts||[]).map(c=>c.source_text).join(' — ')}</div></div>
+                <div key={r.id} className="relationship-row">{r.relationship_type_fa || r.relationship_type} → {r.target?.document_title}{r.target?.number ? `، ${r.target.number}` : ''} <div className="rel-context">{(r.contexts||[]).map(c=>c.target_text).join(' — ')}</div></div>
               ))}
               {relModal.data && relModal.kind === 'incoming' && relModal.data.incoming.map(r => (
-                <div key={r.id} className="relationship-row">{r.relationship_type} ← {r.source?.number || r.source?.id} <div className="rel-context">{(r.contexts||[]).map(c=>c.target_text).join(' — ')}</div></div>
+                <div key={r.id} className="relationship-row">{r.relationship_type_fa || r.relationship_type} ← {r.source?.document_title}{r.source?.number ? `، ${r.source.number}` : ''} <div className="rel-context">{(r.contexts||[]).map(c=>c.source_text).join(' — ')}</div></div>
               ))}
             </div>
           </div>

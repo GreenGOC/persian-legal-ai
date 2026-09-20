@@ -53,7 +53,7 @@ class Command(BaseCommand):
                     all_titles[title] += 1
                     continue
 
-                document = import_document(data)
+                document = import_document(data, path.stem)
                 if document is None:
                     self.stdout.write(self.style.WARNING(f"  Skipped {title}: It's not iranian"))
                     skipped_count += 1

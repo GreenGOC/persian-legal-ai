@@ -1,0 +1,88 @@
+
+
+{
+  "found": true,
+  "relationships": [
+    {
+      "kind": "RELATION",
+      "relation": "TAKHSIS",
+      "source_document": null,
+      "source_provision": "ماده اول",
+      "target_document": null,
+      "target_provision": "ماده اول",
+      "evidence": "نسبت به ملک مشاع که برای آن سند مالکیت معارض صادر گردیده، تا زمانی که رفع تعارض نشده اقدام به افراز نخواهد شد"
+    },
+    {
+      "kind": "RELATION",
+      "relation": "TAKHSIS",
+      "source_document": "TEXT 1",
+      "source_provision": "ماده اول",
+      "target_document": "TEXT 2",
+      "target_provision": "ماده 3",
+      "evidence": "افراز املاک مشاع که جریان ثبتی آنها خاتمه یافته اعم از اینکه در دفتر املاک ثبت‌شده یا نشده باشد، در صورتی که مورد تقاضای یک یا چند شریک باشد با واحد ثبتی محلی خواهد بود که ملک مذکور در حوزه آن واقع است."
+    },
+    {
+      "kind": "RELATION",
+      "relation": "TAKHSIS",
+      "source_document": "TEXT 1",
+      "source_provision": "ماده دوم",
+      "target_document": "TEXT 2",
+      "target_provision": "ماده 27",
+      "evidence": "حکم دادگاه شهرستان قابل شکایت فرجامی است."
+    },
+    {
+      "kind": "RELATION",
+      "relation": "TAKHSIS",
+      "source_document": null,
+      "source_provision": "ماده 44",
+      "target_document": null,
+      "target_provision": "ماده 27",
+      "evidence": "حکمی که در نتیجه اعتراض صادر می‌شود قابل پژوهش و فرجام است"
+    },
+    {
+      "kind": "RELATION",
+      "relation": "TAKHSIS",
+      "source_document": null,
+      "source_provision": "ماده 47",
+      "target_document": null,
+      "target_provision": "ماده 27",
+      "evidence": "حکمی که در این خصوص صادر می‌شود مطابق آیین دادرسی مدنی قابل پژوهش و فرجام است"
+    },
+    {
+      "kind": "RELATION",
+      "relation": "TAKHSIS",
+      "source_document": null,
+      "source_provision": "ماده 66",
+      "target_document": null,
+      "target_provision": "ماده 27",
+      "evidence": "دادستان و محجور و قیم محجور، نسبت به تصمیمات دادگاه در موارد زیر می‌توانند پژوهش بخواهند."
+    },
+    {
+      "kind": "RELATION",
+      "relation": "TAKHSIS",
+      "source_document": null,
+      "source_provision": "ماده 35",
+      "target_document": null,
+      "target_provision": "ماده 35",
+      "evidence": "شکایت پژوهشی موجب تعویق اجرای تصمیم مورد شکایت نمی‌شود مگر این‌که دادگاهی که رسیدگی پژوهشی می‌کند قرار تأخیر اجرای آن را بدهد"
+    },
+    {
+      "kind": "RELATION",
+      "relation": "TAKHSIS",
+      "source_document": null,
+      "source_provision": "ماده 12",
+      "target_document": null,
+      "target_provision": "ماده 12",
+      "evidence": "دادرس می‌تواند رسیدگی را در روزهای تعطیل به تأخیر اندازد مگر این‌که امر از امور فوری باشد"
+    },
+    {
+      "kind": "RELATION",
+      "relation": "TAKHSIS",
+      "source_document": null,
+      "source_provision": "ماده 60",
+      "target_document": null,
+      "target_provision": "ماده 60",
+      "evidence": "برای چند نفر از اشخاص محتاج به قیم، می‌توان یک قیم معین نمود، مگر آن‌که اداره امور هر یک از آنها محتاج به قیم علی‌حده باشد"
+    }
+  ]
+}

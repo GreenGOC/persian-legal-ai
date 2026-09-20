@@ -1,0 +1,88 @@
+
+
+{
+  "found": true,
+  "conflicts": [
+    {
+      "kind": "RELATION",
+      "relation": "CONFLICTS",
+      "source_document": null,
+      "source_provision": "ماده 162",
+      "target_document": null,
+      "target_provision": "ماده 162 (اصلاحی 1361 / 10 / 8)",
+      "evidence": "هر کس مالی پیدا کند که قیمت آن کمتر از یک درهم که وزن آن 12 ٫ 6 نخود نقره باشد، می‌تواند آن را تملک کند.\nهر کس مالی پیدا کند که قیمت آن کمتر از یک درهم نیم مثقال و یک پنجم مثقال شرعی نقره باشد، می‌تواند آن را تملک کند."
+    },
+    {
+      "kind": "RELATION",
+      "relation": "CONFLICTS",
+      "source_document": null,
+      "source_provision": "ماده 162",
+      "target_document": null,
+      "target_provision": "ماده 162 (مصوب 1307 / 2 / 18)",
+      "evidence": "هر کس مالی پیدا کند که قیمت آن کمتر از یک درهم که وزن آن 12 ٫ 6 نخود نقره باشد، می‌تواند آن را تملک کند.\nهر کس مالی پیدا کند که قیمت آن کمتر از دهشاهی باشد، می‌تواند آن را تملک کند."
+    },
+    {
+      "kind": "RELATION",
+      "relation": "CONFLICTS",
+      "source_document": null,
+      "source_provision": "ماده 163",
+      "target_document": null,
+      "target_provision": "ماده 163 (مصوب 1307 / 2 / 18)",
+      "evidence": "اگر قیمت مال پیدا شده، یک درهم که وزن آن 12 / 6 نخود نقره یا بیشتر باشد، پیداکننده باید یک سال تعریف کند.\nاگر قیمت مال پیدا شده دهشاهی یا بیشتر باشد، پیدا کننده باید یک سال تعریف کند،"
+    },
+    {
+      "kind": "RELATION",
+      "relation": "CONFLICTS",
+      "source_document": null,
+      "source_provision": "ماده 164",
+      "target_document": null,
+      "target_provision": "ماده 164 (مصوب 1307 / 2 / 18)",
+      "evidence": "تعریف اشیاء پیدا شده، عبارتست از نشر و اعلان بر حسب مقررات شرعی، به نحوی که بتوان گفت که عادتا به اطلاع اهالی محل رسیده است.\nتعریف اشیاء پیدا شده، عبارت است از نشر و اعلان بر حسب مقتضیات وقت و محل، به نحوی که عادتا به اطلاع اهالی محل برسد."
+    },
+    {
+      "kind": "NOTE",
+      "relation": "CONFLICTS",
+      "source_document": null,
+      "source_provision": null,
+      "target_document": null,
+      "target_provision": null,
+      "evidence": "قوانین، پانزده روز پس از انتشار، در سراسر کشور لازم‌الاجرا است، مگر آن‌که در خود قانون، ترتیب خاصی برای موقع اجرا مقرر شده باشد.\nقوانین در تهران 10 روز پس از انتشار و در ولایات بعد از انقضاء مدت مزبور به اضافه یک روز برای هر شش فرسخ تا تهران لازم الاجراء است مگر اینکه خود قانون، ترتیب خاصی برای موقع اجراء مقرر کرده باشد."
+    },
+    {
+      "kind": "NOTE",
+      "relation": "CONFLICTS",
+      "source_document": null,
+      "source_provision": null,
+      "target_document": null,
+      "target_provision": null,
+      "evidence": "رئیس‌جمهور باید ظرف مدت پنج روز آن را امضا و به مجریان ابلاغ نماید و دستور انتشار آن را صادر کند، و روزنامه رسمی موظف است ظرف مدت 72 ساعت پس از ابلاغ منتشر نماید.\nرئیس‌جمهور باید ظرف 5 روز آن را امضا و به دولت ابلاغ نموده و دولت در موظف است ظرف مدت 48 ساعت آن را منتشر نماید"
+    },
+    {
+      "kind": "NOTE",
+      "relation": "CONFLICTS",
+      "source_document": null,
+      "source_provision": null,
+      "target_document": null,
+      "target_provision": null,
+      "evidence": "رئیس‌جمهور باید ظرف مدت پنج روز آن را امضا و به مجریان ابلاغ نماید و دستور انتشار آن را صادر کند، و روزنامه رسمی موظف است ظرف مدت 72 ساعت پس از ابلاغ منتشر نماید.\nقوانین باید در ظرف سه روز از تاریخ توشیح به صحه ملوکانه، منتشر شود."
+    },
+    {
+      "kind": "NOTE",
+      "relation": "CONFLICTS",
+      "source_document": null,
+      "source_provision": null,
+      "target_document": null,
+      "target_provision": null,
+      "evidence": "وقف بر نفس، به این معنی که واقف خود را موقوف علیه یا جزء موقوف علیهم نماید یا پرداخت دیون یا سایر مخارج خود را از منافع موقوفه قرار دهد، باطل است، اعم از این‌که راجع به حال حیات باشد، یا بعد از فوت.\nدر وقف بر مصالح عامه، اگر خود واقف نیز مصداق موقوف علیهم واقع شود می‌تواند منتفع گردد."
+    },
+    {
+      "kind": "NOTE",
+      "relation": "CONFLICTS",
+      "source_document": null,
+      "source_provision": null,
+      "target_document": null,
+      "target_provision": null,
+      "evidence": "شکار کردن، موجب تملک است.\nشکار حیوانات اهلی و حیوانات دیگری که علامت مالکیت در آن باشد، موجب تملک نمی‌شود."
+    }
+  ]
+}
